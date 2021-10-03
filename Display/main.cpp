@@ -26,6 +26,9 @@
 	#include <sys/time.h>
 #endif
 
+#include "SMStructs.h"
+#include "SMFcn.h"
+#include "SMObject.h"
 
 #include "Camera.hpp"
 #include "Ground.hpp"
@@ -37,6 +40,8 @@
 
 #include "Messages.hpp"
 #include "HUD.hpp"
+
+#define TIMEOUT 1000
 
 void display();
 void reshape(int width, int height);
@@ -64,8 +69,22 @@ Vehicle * vehicle = NULL;
 double speed = 0;
 double steering = 0;
 
+// Shared Memory Declarations
+double waitAndSeeDisp = 0.00;
+SMObject* PMObjPtr;
+
 //int _tmain(int argc, _TCHAR* argv[]) {
 int main(int argc, char ** argv) {
+
+	// Establishing Shared Memory Objects
+	SMObject PMObj(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
+
+	PMObj.SMAccess();
+	if (PMObj.SMAccessError) {
+		Console::WriteLine("ERROR: Process Management SM Object not accessed");
+	}
+
+	PMObjPtr = &PMObj;
 
 	const int WINDOW_WIDTH = 800;
 	const int WINDOW_HEIGHT = 600;
@@ -174,6 +193,21 @@ double getTime()
 }
 
 void idle() {
+
+	ProcessManagement* PMData = (ProcessManagement*)PMObjPtr->pData;
+
+	// Heartbeats: Camera CRITICAL
+	if (PMData->Heartbeat.Flags.Camera == 0) {
+		PMData->Heartbeat.Flags.Camera = 1;
+		waitAndSeeDisp = 0.00;
+	}
+	else {
+		waitAndSeeDisp += 25;
+		if (waitAndSeeDisp > TIMEOUT) {
+			PMData->Shutdown.Status = 0xFF;
+		}
+	}
+
 
 	if (KeyManager::get()->isAsciiKeyPressed('a')) {
 		Camera::get()->strafeLeft();

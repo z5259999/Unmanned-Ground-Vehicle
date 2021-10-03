@@ -11,6 +11,8 @@
 
 #include <turbojpeg.h>
 
+#define TIMEOUT 1000
+
 void display();
 void idle();
 
@@ -20,8 +22,22 @@ GLuint tex;
 zmq::context_t context(1);
 zmq::socket_t subscriber(context, ZMQ_SUB);
 
+// Shared Memory Declarations
+double waitAndSeeCamera = 0.00;
+SMObject* PMObjPtr;
+
 int main(int argc, char** argv)
 {
+	// Establishing Shared Memory Objects
+	SMObject PMObj(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
+	
+	PMObj.SMAccess();
+	if (PMObj.SMAccessError) {
+		Console::WriteLine("ERROR: Process Management SM Object not accessed");
+	}
+
+	PMObjPtr = &PMObj;
+	
 	//Define window size
 	const int WINDOW_WIDTH = 800;
 	const int WINDOW_HEIGHT = 600;
@@ -65,6 +81,20 @@ void display()
 }
 void idle()
 {
+	ProcessManagement* PMData = (ProcessManagement*)PMObjPtr->pData;
+
+	// Heartbeats: Camera CRITICAL
+	if (PMData->Heartbeat.Flags.Camera == 0) {
+		PMData->Heartbeat.Flags.Camera = 1;
+		waitAndSeeCamera = 0.00;
+	}
+	else {
+		waitAndSeeCamera += 25;
+		if (waitAndSeeCamera > TIMEOUT) {
+			PMData->Shutdown.Status = 0xFF;
+		}
+	}
+	
 
 	//receive from zmq
 	zmq::message_t update;

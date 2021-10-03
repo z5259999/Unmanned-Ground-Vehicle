@@ -44,7 +44,7 @@ struct UnitFlags
 					Laser : 1,				//NONCRITICAL
 					VehicleControl : 1,		//NONCRITICAL
 					GPS : 1,				//NONCRITICAL
-					OpenGL : 1,				//NONCRITICAL
+					Display : 1,			//NONCRITICAL
 					Camera : 1,				//NONCRITICAL
 					Garbage : 2;
 };
@@ -61,6 +61,19 @@ struct ProcessManagement
 	ExecFlags Shutdown;
 	long int LifeCounter;
 };
+
+/*
+struct TimeStamps
+{
+	double PMTimeStamp;
+	double GPSTimeStamp;
+	double CameraTimeStamp;
+	double DisplayTimeStamp;
+	double LaserTimeStamp;
+	double VCTimeStamp;
+
+};
+*/
 
 #define NONCRITICALMASK 0xff	//0 011 0000
 #define CRITICALMASK 0x0		//0 100 1111
