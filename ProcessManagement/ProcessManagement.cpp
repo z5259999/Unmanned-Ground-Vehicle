@@ -125,26 +125,27 @@ int main()
 
 	while (!_kbhit()) {
 
-		std::cout << "Initial Fuggup" << waitTime.VC << std::endl;
+		//std::cout << "Initial Fuggup" << waitTime.VC << std::endl;
 
-		/*
+		
 		///////////////////////////LASER///////////////////////////////////
 		// Heartbeats: Laser CRITICAL
 		if (PMData->Heartbeat.Flags.Laser == 1) {
 			PMData->Heartbeat.Flags.Laser = 0;
 			waitTime.Laser = 0.00;
+			//std::cout << "RESET- Laser" << waitTime.Laser << std::endl;
 		}
 		else {
 			waitTime.Laser += 25;
 			if (waitTime.Laser > TIMEOUT) {
 				PMData->Shutdown.Flags.Laser = 1;
-				std::cout << "Yes this sucks lol - Laser" << waitTime.Laser << std::endl;
+				//std::cout << "Yes this sucks lol - Laser" << waitTime.Laser << std::endl;
 				//break;
 			}
 		}
-		*/
+		
 
-		/*
+		
 		//////////////////////Vehicle Control//////////////////////////////
 		// Heartbeats: VC CRITICAL
 		if (PMData->Heartbeat.Flags.VehicleControl == 1) {
@@ -159,7 +160,7 @@ int main()
 				//break;
 			}
 		}
-		*/
+		
 
 		///////////////////////////DISPLAY///////////////////////////////////
 		// Heartbeats: Display CRITICAL
@@ -171,7 +172,6 @@ int main()
 			waitTime.Display += 25;
 			if (waitTime.Display > TIMEOUT) {
 				PMData->Shutdown.Flags.Display = 1;
-				std::cout << "Yes this sucks lol - Disp" << waitTime.Display << std::endl;
 				//break;
 			}
 		}
@@ -189,17 +189,19 @@ int main()
 				StartProcesses();
 			}
 		}
-
+		
 
 		///////////////////////////Camera///////////////////////////////////////
-		// Heartbeats: GPS NONCRITICAL
+		// Heartbeats: Camera CRITICAL
 		if (PMData->Heartbeat.Flags.Camera == 1) {
 			PMData->Heartbeat.Flags.Camera = 0;
 			waitTime.Camera = 0.00;
+			//std::cout << "RESET- CAMERA" << waitTime.Camera<< std::endl;
 		}
 		else {
 			waitTime.Camera += 25;
 			if (waitTime.Camera > TIMEOUT) {
+				//std::cout << "Camera lul" << waitTime.Camera << std::endl;
 				StartProcesses();
 			}
 		}
