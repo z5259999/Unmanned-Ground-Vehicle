@@ -11,8 +11,6 @@
 
 #include <turbojpeg.h>
 
-#define TIMEOUT 1000
-
 void display();
 void idle();
 

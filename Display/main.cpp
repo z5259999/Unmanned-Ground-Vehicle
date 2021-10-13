@@ -41,7 +41,6 @@
 #include "Messages.hpp"
 #include "HUD.hpp"
 
-#define TIMEOUT 1000
 
 void display();
 void reshape(int width, int height);
@@ -58,6 +57,7 @@ void motion(int x, int y);
 
 using namespace std;
 using namespace scos;
+using namespace System::Threading;
 
 // Used to store the previous mouse location so we
 //   can calculate relative mouse movement.
@@ -195,10 +195,11 @@ double getTime()
 void idle() {
 
 	ProcessManagement* PMData = (ProcessManagement*)PMObjPtr->pData;
-
+	//Console::WriteLine("benis");
 	// Heartbeats: Camera CRITICAL
 	if (PMData->Heartbeat.Flags.Camera == 0) {
 		PMData->Heartbeat.Flags.Camera = 1;
+		Console::WriteLine("benis");
 		waitAndSeeDisp = 0.00;
 	}
 	else {
@@ -207,6 +208,12 @@ void idle() {
 			PMData->Shutdown.Status = 0xFF;
 		}
 	}
+	Thread::Sleep(25);
+	/*
+	if (PMData->Shutdown.Status == 0xFF) {
+		exit(0);
+	}
+	*/
 
 
 	if (KeyManager::get()->isAsciiKeyPressed('a')) {

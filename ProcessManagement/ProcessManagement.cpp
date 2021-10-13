@@ -18,7 +18,6 @@ using namespace System::Net;
 using namespace System::Text;
 
 #define NUM_UNITS 5
-#define TIMEOUT 1000
 
 bool IsProcessRunning(const char* processName);
 void StartProcesses();
@@ -31,7 +30,7 @@ TCHAR Units[10][20] = //
 	TEXT("Display.exe"),
 	TEXT("GPS.exe"),
 	TEXT("Camera.exe"),
-	TEXT("OpenGL.exe")
+	//TEXT("OpenGL.exe")
 };
 
 struct waitAndSee {
@@ -48,6 +47,8 @@ int main()
 	
 	// Create struct to keep the waitAndSee times
 	waitAndSee waitTime = {0.00, 0.00, 0.00, 0.00, 0.00};
+
+	
 
 	///////////////////////////PM///////////////////////////////////////
 
@@ -123,7 +124,7 @@ int main()
 	*/
 
 	PMData->Shutdown.Status = 0x00;
-
+	double WaitAndSee = 0.00;
 	while (!_kbhit()) {
 
 		
@@ -154,7 +155,7 @@ int main()
 			if (waitTime.VC > TIMEOUT) {
 				//PMData->Shutdown.Flags.VehicleControl = 1;
 				//std::cout << "Yes this sucks lol - VC" << waitTime.VC << std::endl;
-				Console::WriteLine("VC Dead Sadge");
+				std::cout << "VC UGH" << waitTime.VC << std::endl;
 				//break;
 			}
 		}
@@ -164,12 +165,13 @@ int main()
 		// Heartbeats: Display CRITICAL
 		if (PMData->Heartbeat.Flags.Display == 1) {
 			PMData->Heartbeat.Flags.Display = 0;
-			waitTime.Display = 0.00;
+			WaitAndSee = 0.00;
 		}
 		else {
 			waitTime.Display += 25;
 			if (waitTime.Display > TIMEOUT) {
-				PMData->Shutdown.Flags.Display = 1;
+				std::cout << "Display UGH " << waitTime.Display << std::endl;
+				PMData->Shutdown.Status = 0xFF;
 				//break;
 			}
 		}
@@ -185,6 +187,7 @@ int main()
 			waitTime.GPS += 25;
 			if (waitTime.GPS > TIMEOUT) {
 				//std::cout << "RESTARTING GPS: " << waitTime.GPS << std::endl;
+				std::cout << "GPS UGH" << waitTime.GPS << std::endl;
 				StartProcesses();
 			}
 		}
@@ -201,11 +204,12 @@ int main()
 			waitTime.Camera += 25;
 			if (waitTime.Camera > TIMEOUT) {
 				//std::cout << "RESTARTING CAMERA: " << waitTime.Camera << std::endl;
+				Console::WriteLine("big sad");
 				StartProcesses();
 			}
 		}
 
-		Sleep(50);
+		Sleep(25);
 
 	}
 	

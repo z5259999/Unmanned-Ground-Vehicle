@@ -5,8 +5,6 @@
 #include <iostream>
 #include <conio.h>
 
-#define TIMEOUT 1000
-
 using namespace System::Diagnostics;
 using namespace System::Threading;
 using namespace System;

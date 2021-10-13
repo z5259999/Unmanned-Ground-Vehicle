@@ -6,8 +6,6 @@
 #include <iostream>
 #include <conio.h>
 
-#define TIMEOUT 1000
-
 using namespace System::Diagnostics;
 using namespace System::Threading;
 using namespace System;
@@ -19,11 +17,20 @@ using namespace System::Text;
 
 int main() {
 	
-
+	/*
 	GPS GPSModule;
 	GPSModule.setupSharedMemory();
 	
-	/*
+	while (!GPSModule.getShutdownFlag()) {
+
+		//GPSModule.checkData();
+		GPSModule.setHeartbeat(1);
+	}
+
+	GPSModule.~GPS();
+	*/
+
+	double WaitTimeGPS = 0.00;
 	SMObject PMObj(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
 	ProcessManagement* PMData = NULL;
 
@@ -33,20 +40,8 @@ int main() {
 	}
 
 	PMData = (ProcessManagement*)PMObj.pData;
-	*/
-
-	double WaitTimeGPS = 0.00;
-	
-	while (!GPSModule.getShutdownFlag()) {
-
-		//GPSModule.checkData();
-		GPSModule.setHeartbeat(1);
-	}
-
-	GPSModule.~GPS();
 	
 
-	/*
 	while (!PMData->Shutdown.Flags.GPS)
 	{
 		if (PMData->Heartbeat.Flags.GPS == 0) {
@@ -56,18 +51,19 @@ int main() {
 		else {
 			WaitTimeGPS += 25;
 			if (WaitTimeGPS > TIMEOUT) {
+
 				PMData->Shutdown.Status = 0xFF;
 			}
 		}
 
-		Thread::Sleep(100);
+		Thread::Sleep(25);
 		
 		if (PMData->Shutdown.Status) {
+			exit(0);
 			break;
 		}
 
 	}
-	*/
 
 	return 0;
 }

@@ -8,8 +8,6 @@ using namespace System::Net::Sockets;
 using namespace System::Net;
 using namespace System::Text;
 
-#define TIMEOUT 1000
-
 int Laser::connect(String^ hostName, int portNumber) {
 
 	//Create Client

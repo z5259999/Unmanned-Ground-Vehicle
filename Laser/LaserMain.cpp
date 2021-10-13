@@ -19,8 +19,6 @@ using namespace Sockets;
 using namespace System::Net;
 using namespace System::Text;
 
-#define TIMEOUT 1000
-
 int main() {
 	
 	String^ hostName = "192.168.1.200";

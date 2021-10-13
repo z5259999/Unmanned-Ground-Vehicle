@@ -77,4 +77,5 @@ struct TimeStamps
 
 #define NONCRITICALMASK 0xff	//0 011 0000
 #define CRITICALMASK 0x0		//0 100 1111
+#define TIMEOUT 1000
 #endif

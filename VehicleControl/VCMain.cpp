@@ -19,11 +19,10 @@ using namespace Sockets;
 using namespace System::Net;
 using namespace System::Text;
 
-#define TIMEOUT 1000
 
 int main() 
 {
-
+	/*
 	VehicleControl VCModule;
 	VCModule.setupSharedMemory();
 
@@ -33,8 +32,9 @@ int main()
 	}
 
 	VCModule.~VehicleControl();
+	*/
 
-	/*
+	double WaitTimeVC = 0.00;
 	SMObject PMObj(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
 	ProcessManagement* PMData = NULL;
 
@@ -65,7 +65,7 @@ int main()
 		}
 
 	}
-	*/
+	
 
 
 	return 0;
