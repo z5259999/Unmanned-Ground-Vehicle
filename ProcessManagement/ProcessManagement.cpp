@@ -26,22 +26,21 @@ void StartProcesses();
 //defining start up sequence
 TCHAR Units[10][20] = //
 {
+	TEXT("LASER.exe"),
+	TEXT("VehicleControl.exe"),
+	TEXT("Display.exe"),
 	TEXT("GPS.exe"),
 	TEXT("Camera.exe"),
-	TEXT("Display.exe"),
-	TEXT("LASER.exe"),
-	TEXT("VehicleControl.exe") //,
-	//TEXT("OpenGL.exe")
+	TEXT("OpenGL.exe")
 };
 
 struct waitAndSee {
 
-	double GPS = 0.00;
-	double Camera = 0.00;
-	double Display = 0.00;
 	double Laser = 0.00;
 	double VC = 0.00;
-
+	double Display = 0.00;
+	double GPS = 0.00;
+	double Camera = 0.00;	
 };
 
 int main()
@@ -69,6 +68,7 @@ int main()
 	//start all 5 modules
 	StartProcesses();
 
+	/*
 	///////////////////////////LASER///////////////////////////////////
 
 	SMObject LaserObj(_TEXT("Laser"), sizeof(SM_Laser));
@@ -120,12 +120,11 @@ int main()
 	GPSData = (SM_GPS*)GPSObj.pData;
 
 	//////////////////////////////////////////////////////////////////
+	*/
 
 	PMData->Shutdown.Status = 0x00;
 
 	while (!_kbhit()) {
-
-		//std::cout << "Initial Fuggup" << waitTime.VC << std::endl;
 
 		
 		///////////////////////////LASER///////////////////////////////////
@@ -133,18 +132,16 @@ int main()
 		if (PMData->Heartbeat.Flags.Laser == 1) {
 			PMData->Heartbeat.Flags.Laser = 0;
 			waitTime.Laser = 0.00;
-			//std::cout << "RESET- Laser" << waitTime.Laser << std::endl;
+			//std::cout << "Laser Running " << waitTime.Laser << std::endl;
 		}
 		else {
 			waitTime.Laser += 25;
 			if (waitTime.Laser > TIMEOUT) {
 				PMData->Shutdown.Flags.Laser = 1;
-				//std::cout << "Yes this sucks lol - Laser" << waitTime.Laser << std::endl;
+				//std::cout << "Laser Dead " << waitTime.Laser << std::endl;
 				//break;
 			}
 		}
-		
-
 		
 		//////////////////////Vehicle Control//////////////////////////////
 		// Heartbeats: VC CRITICAL
@@ -155,8 +152,9 @@ int main()
 		else {
 			waitTime.VC += 25;
 			if (waitTime.VC > TIMEOUT) {
-				PMData->Shutdown.Flags.VehicleControl = 1;
-				std::cout << "Yes this sucks lol - VC" << waitTime.VC << std::endl;
+				//PMData->Shutdown.Flags.VehicleControl = 1;
+				//std::cout << "Yes this sucks lol - VC" << waitTime.VC << std::endl;
+				Console::WriteLine("VC Dead Sadge");
 				//break;
 			}
 		}
@@ -186,6 +184,7 @@ int main()
 		else {
 			waitTime.GPS += 25;
 			if (waitTime.GPS > TIMEOUT) {
+				//std::cout << "RESTARTING GPS: " << waitTime.GPS << std::endl;
 				StartProcesses();
 			}
 		}
@@ -201,7 +200,7 @@ int main()
 		else {
 			waitTime.Camera += 25;
 			if (waitTime.Camera > TIMEOUT) {
-				//std::cout << "Camera lul" << waitTime.Camera << std::endl;
+				//std::cout << "RESTARTING CAMERA: " << waitTime.Camera << std::endl;
 				StartProcesses();
 			}
 		}

@@ -122,7 +122,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\Common\SMObject.cpp" />
+    <ClCompile Include="VCMain.cpp" />
     <ClCompile Include="VehicleControl.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="VehicleControl.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

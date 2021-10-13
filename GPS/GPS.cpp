@@ -1,5 +1,19 @@
 
 #include "GPS.h"
+#include "SMStructs.h"
+#include <SMObject.h>
+
+#include <iostream>
+#include <conio.h>
+
+#define TIMEOUT 1000
+
+using namespace System::Diagnostics;
+using namespace System::Threading;
+using namespace System;
+using namespace System::Net::Sockets;
+using namespace System::Net;
+using namespace System::Text;
 
 int GPS::connect(String^ hostName, int portNumber)
 {
@@ -8,8 +22,18 @@ int GPS::connect(String^ hostName, int portNumber)
 }
 int GPS::setupSharedMemory()
 {
-	// YOUR CODE HERE
+	ProcessManagementData = new SMObject(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
+	//SensorData = new SMObject(_TEXT("GPS"), sizeof(SM_GPS));
+
+	ProcessManagementData->SMAccess();
+	if (ProcessManagementData->SMAccessError) {
+		Console::WriteLine("ERROR: PM SM Object not accessed");
+	}
+
+	ProcessManagement* PMData = (ProcessManagement*)ProcessManagementData->pData;
+
 	return 1;
+
 }
 int GPS::getData()
 {
@@ -28,17 +52,38 @@ int GPS::sendDataToSharedMemory()
 }
 bool GPS::getShutdownFlag()
 {
-	// YOUR CODE HERE
-	return 1;
+	ProcessManagement* PMData = (ProcessManagement*)ProcessManagementData->pData;
+	return PMData->Shutdown.Flags.GPS;
+
 }
 int GPS::setHeartbeat(bool heartbeat)
 {
-	// YOUR CODE HERE
+	ProcessManagement* PMData = (ProcessManagement*)ProcessManagementData->pData;
+	double WaitTimeG = 0.00;
+
+	if (PMData->Heartbeat.Flags.GPS == 0) {
+		PMData->Heartbeat.Flags.GPS == 1;
+		WaitTimeG = 0.00;
+	}
+	else {
+		WaitTimeG += 25;
+		if (WaitTimeG > TIMEOUT) {
+			PMData->Shutdown.Status = 0xFF;
+		}
+	}
+
+	Thread::Sleep(25);
+
+	if (PMData->Shutdown.Status) {
+		exit(0);
+	}
+
 	return 1;
 }
 GPS::~GPS()
 {
 	// YOUR CODE HERE
+	delete ProcessManagementData;
 }
 
 

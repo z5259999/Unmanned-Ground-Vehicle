@@ -122,8 +122,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\ProcessManagement\SMObject.cpp" />
+    <ClCompile Include="..\Common\SMObject.cpp" />
     <ClCompile Include="Laser.cpp" />
+    <ClCompile Include="LaserMain.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Laser.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

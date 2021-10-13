@@ -1,3 +1,4 @@
+#include "VehicleControl.h"
 #include "SMStructs.h"
 #include "SMObject.h"
 
@@ -6,47 +7,82 @@
 
 #define TIMEOUT 1000
 
+using namespace System::Diagnostics;
 using namespace System::Threading;
 using namespace System;
+using namespace System::Net::Sockets;
+using namespace Net;
+using namespace Sockets;
+using namespace System::Net;
+using namespace System::Text;
 
-int VCShutdown = 0;
-double WaitTimeVC = 0.00;
+int VehicleControl::connect(String^ hostName, int portNumber)
+{
+	// YOUR CODE HERE
+	return 1;
+}
+int VehicleControl::setupSharedMemory()
+{
+	ProcessManagementData = new SMObject(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
+	//SensorData = new SMObject(_TEXT("VehicleControl"), sizeof(SM_VehicleControl));
 
-
-int main() {
-
-	/*
-	SMObject PMObj(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
-	ProcessManagement* PMData = NULL;
-
-	PMObj.SMAccess();
-	if (PMObj.SMAccessError) {
-		Console::WriteLine("ERROR: Process Management SM Object not accessed");
+	ProcessManagementData->SMAccess();
+	if (ProcessManagementData->SMAccessError) {
+		Console::WriteLine("ERROR: PM SM Object not accessed");
 	}
 
-	PMData = (ProcessManagement*)PMObj.pData;
+	ProcessManagement* PMData = (ProcessManagement*)ProcessManagementData->pData;
 
-	while (!PMData->Shutdown.Flags.VehicleControl)
-	{
-		if (PMData->Heartbeat.Flags.VehicleControl == 0) {
-			PMData->Heartbeat.Flags.VehicleControl = 1;
-			WaitTimeVC = 0.00;
-		}
-		else {
-			WaitTimeVC += 25;
-			if (WaitTimeVC > TIMEOUT) {
-				PMData->Shutdown.Status = 0xFF;
-			}
-		}
+	return 1;
 
-		Thread::Sleep(25);
+}
+int VehicleControl::getData()
+{
+	// YOUR CODE HERE
+	return 1;
+}
+int VehicleControl::checkData()
+{
+	// YOUR CODE HERE
+	return 1;
+}
+int VehicleControl::sendDataToSharedMemory()
+{
+	// YOUR CODE HERE
+	return 1;
+}
+bool VehicleControl::getShutdownFlag()
+{
+	ProcessManagement* PMData = (ProcessManagement*)ProcessManagementData->pData;
+	return PMData->Shutdown.Flags.VehicleControl;
 
-		if (PMData->Shutdown.Status) {
-			break;
-		}
+}
+int VehicleControl::setHeartbeat(bool heartbeat)
+{
+	ProcessManagement* PMData = (ProcessManagement*)ProcessManagementData->pData;
+	double WaitTimeV = 0.00;
 
+	if (PMData->Heartbeat.Flags.VehicleControl == 0) {
+		PMData->Heartbeat.Flags.VehicleControl == 1;
+		WaitTimeV = 0.00;
 	}
-	*/
+	else {
+		WaitTimeV += 25;
+		if (WaitTimeV > TIMEOUT) {
+			PMData->Shutdown.Status = 0xFF;
+		}
+	}
 
-	return 0;
+	Thread::Sleep(25);
+
+	if (PMData->Shutdown.Status) {
+		exit(0);
+	}
+
+	return 1;
+}
+VehicleControl::~VehicleControl()
+{
+	// YOUR CODE HERE
+	delete ProcessManagementData;
 }
