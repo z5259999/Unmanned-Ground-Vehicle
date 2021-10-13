@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
@@ -6,29 +5,31 @@
 #include <sstream>
 #include <map>
 
-#ifdef __APPLE__
-	#include <OpenGL/gl.h>
-	#include <OpenGL/glu.h>
-	#include <GLUT/glut.h>
-	#include <unistd.h>
-	#include <sys/time.h>
-#elif defined(WIN32)
-	#include <Windows.h>
-	#include <tchar.h>
-	#include <GL/gl.h>
-	#include <GL/glu.h>
-	#include <GL/glut.h>
-#else
-	#include <GL/gl.h>
-	#include <GL/glu.h>
-	#include <GL/glut.h>
-	#include <unistd.h>
-	#include <sys/time.h>
-#endif
-
 #include "SMStructs.h"
 #include "SMFcn.h"
+#include <smstructs.h>
 #include "SMObject.h"
+
+#ifdef _APPLE_
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#include <GLUT/glut.h>
+#include <unistd.h>
+#include <sys/time.h>
+#elif defined(WIN32)
+#include <Windows.h>
+#include <tchar.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/glut.h>
+#else
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/glut.h>
+#include <unistd.h>
+#include <sys/time.h>
+#endif
+
 
 #include "Camera.hpp"
 #include "Ground.hpp"
@@ -40,7 +41,6 @@
 
 #include "Messages.hpp"
 #include "HUD.hpp"
-
 
 void display();
 void reshape(int width, int height);
@@ -57,6 +57,8 @@ void motion(int x, int y);
 
 using namespace std;
 using namespace scos;
+using namespace System;
+using namespace System::Diagnostics;
 using namespace System::Threading;
 
 // Used to store the previous mouse location so we
@@ -65,23 +67,20 @@ int prev_mouse_x = -1;
 int prev_mouse_y = -1;
 
 // vehicle control related variables
-Vehicle * vehicle = NULL;
+Vehicle* vehicle = NULL;
 double speed = 0;
 double steering = 0;
-
-// Shared Memory Declarations
-double waitAndSeeDisp = 0.00;
 SMObject* PMObjPtr;
 
 //int _tmain(int argc, _TCHAR* argv[]) {
-int main(int argc, char ** argv) {
+int main(int argc, char** argv) {
 
-	// Establishing Shared Memory Objects
-	SMObject PMObj(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
-
+	//Shared memory
+	SMObject PMObj(TEXT("ProcessManagement"), sizeof(ProcessManagement));
+	//SM Creation and Seeking access 
 	PMObj.SMAccess();
 	if (PMObj.SMAccessError) {
-		Console::WriteLine("ERROR: Process Management SM Object not accessed");
+		Console::WriteLine("Error - PM shared memory could not be accessed.");
 	}
 
 	PMObjPtr = &PMObj;
@@ -117,10 +116,11 @@ int main(int argc, char ** argv) {
 	//   with the name of the class you want to show as the current 
 	//   custom vehicle.
 	// -------------------------------------------------------------------------
+
 	vehicle = new MyVehicle();
-
-
 	glutMainLoop();
+
+
 
 	if (vehicle != NULL) {
 		delete vehicle;
@@ -140,7 +140,7 @@ void display() {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	if(Camera::get()->isPursuitMode() && vehicle != NULL) {
+	if (Camera::get()->isPursuitMode() && vehicle != NULL) {
 		double x = vehicle->getX(), y = vehicle->getY(), z = vehicle->getZ();
 		double dx = cos(vehicle->getRotation() * 3.141592765 / 180.0);
 		double dy = sin(vehicle->getRotation() * 3.141592765 / 180.0);
@@ -151,7 +151,7 @@ void display() {
 	Camera::get()->setLookAt();
 
 	Ground::draw();
-	
+
 	// draw my vehicle
 	if (vehicle != NULL) {
 		vehicle->draw();
@@ -178,7 +178,7 @@ double getTime()
 #if defined(WIN32)
 	LARGE_INTEGER freqli;
 	LARGE_INTEGER li;
-	if(QueryPerformanceCounter(&li) && QueryPerformanceFrequency(&freqli)) {
+	if (QueryPerformanceCounter(&li) && QueryPerformanceFrequency(&freqli)) {
 		return double(li.QuadPart) / double(freqli.QuadPart);
 	}
 	else {
@@ -194,27 +194,25 @@ double getTime()
 
 void idle() {
 
+	double WaitAndSee = 0.00;
+
 	ProcessManagement* PMData = (ProcessManagement*)PMObjPtr->pData;
-	//Console::WriteLine("benis");
-	// Heartbeats: Camera CRITICAL
-	if (PMData->Heartbeat.Flags.Camera == 0) {
-		PMData->Heartbeat.Flags.Camera = 1;
-		Console::WriteLine("benis");
-		waitAndSeeDisp = 0.00;
+
+	if (PMData->Heartbeat.Flags.Display == 0) { //Check that PM has set the flag down 
+		PMData->Heartbeat.Flags.Display = 1; //set the flag up 
+		//Reset WaitAndSeeTime
+		WaitAndSee = 0.00;
 	}
 	else {
-		waitAndSeeDisp += 25;
-		if (waitAndSeeDisp > TIMEOUT) {
+		WaitAndSee += 25;
+		if (WaitAndSee > TIMEOUT) {
 			PMData->Shutdown.Status = 0xFF;
 		}
 	}
-	Thread::Sleep(25);
-	/*
-	if (PMData->Shutdown.Status == 0xFF) {
+	if (PMData->Shutdown.Status == 0xFF)
 		exit(0);
-	}
-	*/
 
+	Thread::Sleep(25);
 
 	if (KeyManager::get()->isAsciiKeyPressed('a')) {
 		Camera::get()->strafeLeft();
@@ -244,7 +242,7 @@ void idle() {
 	steering = 0;
 
 	if (KeyManager::get()->isSpecialKeyPressed(GLUT_KEY_LEFT)) {
-		steering = Vehicle::MAX_LEFT_STEERING_DEGS * -1;   
+		steering = Vehicle::MAX_LEFT_STEERING_DEGS * -1;
 	}
 
 	if (KeyManager::get()->isSpecialKeyPressed(GLUT_KEY_RIGHT)) {
@@ -294,7 +292,7 @@ void keydown(unsigned char key, int x, int y) {
 	switch (key) {
 	case 27: // ESC key
 		exit(0);
-		break;      
+		break;
 	case '0':
 		Camera::get()->jumpToOrigin();
 		break;
@@ -315,8 +313,8 @@ void special_keydown(int keycode, int x, int y) {
 
 };
 
-void special_keyup(int keycode, int x, int y) {  
-	KeyManager::get()->specialKeyReleased(keycode);  
+void special_keyup(int keycode, int x, int y) {
+	KeyManager::get()->specialKeyReleased(keycode);
 };
 
 void mouse(int button, int state, int x, int y) {
@@ -342,5 +340,3 @@ void motion(int x, int y) {
 	prev_mouse_x = x;
 	prev_mouse_y = y;
 };
-
-

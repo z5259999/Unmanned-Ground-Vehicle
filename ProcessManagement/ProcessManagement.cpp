@@ -25,7 +25,7 @@ void StartProcesses();
 //defining start up sequence
 TCHAR Units[10][20] = //
 {
-	TEXT("LASER.exe"),
+	TEXT("Laser.exe"),
 	TEXT("VehicleControl.exe"),
 	TEXT("Display.exe"),
 	TEXT("GPS.exe"),

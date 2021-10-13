@@ -21,6 +21,7 @@ using namespace System::Text;
 
 int main() {
 	
+	/*
 	String^ hostName = "192.168.1.200";
 	int portNumber = 23000;
 
@@ -35,9 +36,46 @@ int main() {
 	}
 	
 	LaserModule.~Laser();
+
 	
 	return 0;
-	
+	*/
+
+	double WaitTimeLaser = 0.00;
+	SMObject PMObj(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
+	ProcessManagement* PMData = NULL;
+
+	PMObj.SMAccess();
+	if (PMObj.SMAccessError) {
+		Console::WriteLine("ERROR: Process Management SM Object not accessed");
+	}
+
+	PMData = (ProcessManagement*)PMObj.pData;
+
+
+	while (!PMData->Shutdown.Flags.Laser)
+	{
+		if (PMData->Heartbeat.Flags.GPS == 0) {
+			PMData->Heartbeat.Flags.GPS = 1;
+			WaitTimeLaser = 0.00;
+		}
+		else {
+			WaitTimeLaser += 25;
+			if (WaitTimeLaser > TIMEOUT) {
+
+				PMData->Shutdown.Status = 0xFF;
+			}
+		}
+
+		Thread::Sleep(25);
+
+		if (PMData->Shutdown.Status) {
+			exit(0);
+			break;
+		}
+
+	}
+
 	
 	/*
 	///////////////////////////PM///////////////////////////////////////
