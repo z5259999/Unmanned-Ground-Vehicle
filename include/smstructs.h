@@ -60,20 +60,17 @@ struct ProcessManagement
 	ExecFlags Heartbeat;
 	ExecFlags Shutdown;
 	long int LifeCounter;
+	double ModCounters[5];
 };
 
-/*
-struct TimeStamps
-{
-	double PMTimeStamp;
-	double GPSTimeStamp;
-	double CameraTimeStamp;
-	double DisplayTimeStamp;
-	double LaserTimeStamp;
-	double VCTimeStamp;
-
+enum ModList {
+	
+	TIME_LASER,
+	TIME_VC,
+	TIME_DISP,
+	TIME_GPS,
+	TIME_CAMERA
 };
-*/
 
 #define NONCRITICALMASK 0xff	//0 011 0000
 #define CRITICALMASK 0x0		//0 100 1111

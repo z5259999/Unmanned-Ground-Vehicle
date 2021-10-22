@@ -16,37 +16,49 @@ using namespace System::Text;
 
 int VehicleControl::connect(String^ hostName, int portNumber)
 {
-	// YOUR CODE HERE
+	// NO CONNECTION!
 	return 1;
 }
 int VehicleControl::setupSharedMemory()
 {
+	// Create the SM Objects
 	ProcessManagementData = new SMObject(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
-	//SensorData = new SMObject(_TEXT("VehicleControl"), sizeof(SM_VehicleControl));
+	SensorData = new SMObject(_TEXT("VehicleControl"), sizeof(SM_VehicleControl));
 
+	// Attempt to access PM
 	ProcessManagementData->SMAccess();
 	if (ProcessManagementData->SMAccessError) {
 		Console::WriteLine("ERROR: PM SM Object not accessed");
 	}
+	// Attempt to access VC
+	SensorData->SMAccess();
+	if (SensorData->SMAccessError) {
+		Console::WriteLine("ERROR: VC SM Object not accessed");
+	}
 
-	ProcessManagement* PMData = (ProcessManagement*)ProcessManagementData->pData;
+	// Point to shared memory
+	PMData = (ProcessManagement*)ProcessManagementData->pData;
+	VehicleData = (SM_VehicleControl*)SensorData->pData;
+
+	// Set flag to 0 by default, ensure it isn't shut down
+	PMData->Shutdown.Flags.VehicleControl = 0;
 
 	return 1;
 
 }
 int VehicleControl::getData()
 {
-	// YOUR CODE HERE
+	// NO DATA TO RETRIEVE!
 	return 1;
 }
 int VehicleControl::checkData()
 {
-	// YOUR CODE HERE
+	// NO DATA TO CHECK!
 	return 1;
 }
 int VehicleControl::sendDataToSharedMemory()
 {
-	// YOUR CODE HERE
+	// NO DATA TO SEND!
 	return 1;
 }
 bool VehicleControl::getShutdownFlag()
@@ -81,6 +93,7 @@ int VehicleControl::setHeartbeat(bool heartbeat)
 }
 VehicleControl::~VehicleControl()
 {
-	// YOUR CODE HERE
+	// NO STREAMS OR CLIENTS TO CLOSE!
 	delete ProcessManagementData;
+	delete SensorData;
 }

@@ -1,4 +1,9 @@
 
+// Credited Authors: Jay Katupitiya, James Stevens
+// Codebase (Heartbeats) derived from week 4 Pre-recorded videos [Accessed from 1 Oct 2021] 
+// Available: https://moodle.telt.unsw.edu.au/mod/resource/view.php?id=4062689
+
+
 #using <System.dll>
 #include <Windows.h>
 #include <tchar.h>
@@ -30,26 +35,15 @@ TCHAR Units[10][20] = //
 	TEXT("Display.exe"),
 	TEXT("GPS.exe"),
 	TEXT("Camera.exe"),
-	//TEXT("OpenGL.exe")
-};
-
-struct waitAndSee {
-
-	double Laser = 0.00;
-	double VC = 0.00;
-	double Display = 0.00;
-	double GPS = 0.00;
-	double Camera = 0.00;	
 };
 
 int main()
 {
 	
-	// Create struct to keep the waitAndSee times
-	waitAndSee waitTime = {0.00, 0.00, 0.00, 0.00, 0.00};
+	// Create array to keep the waitAndSee times
+	double waitTime[5] = {0.00, 0.00, 0.00, 0.00, 0.00};
 
 	
-
 	///////////////////////////PM///////////////////////////////////////
 
 	SMObject PMObj(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
@@ -66,10 +60,7 @@ int main()
 
 	PMData = (ProcessManagement*)PMObj.pData;
 
-	//start all 5 modules
-	StartProcesses();
 
-	/*
 	///////////////////////////LASER///////////////////////////////////
 
 	SMObject LaserObj(_TEXT("Laser"), sizeof(SM_Laser));
@@ -121,26 +112,30 @@ int main()
 	GPSData = (SM_GPS*)GPSObj.pData;
 
 	//////////////////////////////////////////////////////////////////
-	*/
 
+	//start all 5 modules
+	StartProcesses();
 	PMData->Shutdown.Status = 0x00;
-	double WaitAndSee = 0.00;
+
 	while (!_kbhit()) {
 
 		
 		///////////////////////////LASER///////////////////////////////////
+		
 		// Heartbeats: Laser CRITICAL
+		// Flip the flag from 1 to 0 - Communicates with Laser.cpp
 		if (PMData->Heartbeat.Flags.Laser == 1) {
 			PMData->Heartbeat.Flags.Laser = 0;
-			waitTime.Laser = 0.00;
-			//std::cout << "Laser Running " << waitTime.Laser << std::endl;
+			waitTime[TIME_LASER] = 0.00;
+			Console::WriteLine("Laser OK");
 		}
 		else {
-			waitTime.Laser += 25;
-			if (waitTime.Laser > TIMEOUT) {
-				PMData->Shutdown.Flags.Laser = 1;
-				//std::cout << "Laser Dead " << waitTime.Laser << std::endl;
-				//break;
+			waitTime[TIME_LASER] += 25;
+			// No response for CRITICAL PROCESS - Kill Program
+			if (waitTime[TIME_LASER] > TIMEOUT) {
+				Console::WriteLine("Laser NOT OK: CRITICAL SHUTDOWN");
+				PMData->Shutdown.Status = 0xFF;
+				break;
 			}
 		}
 		
@@ -148,31 +143,30 @@ int main()
 		// Heartbeats: VC CRITICAL
 		if (PMData->Heartbeat.Flags.VehicleControl == 1) {
 			PMData->Heartbeat.Flags.VehicleControl = 0;
-			waitTime.VC = 0.00;
+			waitTime[TIME_VC] = 0.00;
 		}
 		else {
-			waitTime.VC += 25;
-			if (waitTime.VC > TIMEOUT) {
-				//PMData->Shutdown.Flags.VehicleControl = 1;
-				//std::cout << "Yes this sucks lol - VC" << waitTime.VC << std::endl;
-				std::cout << "VC UGH" << waitTime.VC << std::endl;
-				//break;
+			waitTime[TIME_VC] += 25;
+			if (waitTime[TIME_VC] > TIMEOUT) {
+				PMData->Shutdown.Status = 0xFF;
+				Console::WriteLine("VC NOT OK: CRITICAL SHUTDOWN");
+				break;
 			}
 		}
 		
 
 		///////////////////////////DISPLAY///////////////////////////////////
-		// Heartbeats: Display CRITICAL
+		// Heartbeats: Display NONCRITICAL
 		if (PMData->Heartbeat.Flags.Display == 1) {
 			PMData->Heartbeat.Flags.Display = 0;
-			WaitAndSee = 0.00;
+			waitTime[TIME_DISP] = 0.00;
 		}
 		else {
-			waitTime.Display += 25;
-			if (waitTime.Display > TIMEOUT) {
-				std::cout << "Display UGH " << waitTime.Display << std::endl;
-				PMData->Shutdown.Status = 0xFF;
-				//break;
+			waitTime[TIME_DISP] += 25;
+			if (waitTime[TIME_DISP] > TIMEOUT) {
+				Console::WriteLine("Display NOT OK: RESTARTING");
+				StartProcesses();
+				waitTime[TIME_DISP] = 0.00;
 			}
 		}
 
@@ -181,14 +175,14 @@ int main()
 		// Heartbeats: GPS NONCRITICAL
 		if (PMData->Heartbeat.Flags.GPS == 1) {
 			PMData->Heartbeat.Flags.GPS = 0;
-			waitTime.GPS = 0.00;
+			waitTime[TIME_GPS] = 0.00;
 		}
 		else {
-			waitTime.GPS += 25;
-			if (waitTime.GPS > TIMEOUT) {
-				//std::cout << "RESTARTING GPS: " << waitTime.GPS << std::endl;
-				std::cout << "GPS UGH" << waitTime.GPS << std::endl;
+			waitTime[TIME_GPS] += 25;
+			if (waitTime[TIME_GPS] > TIMEOUT) {
+				Console::WriteLine("GPS NOT OK: RESTARTING");
 				StartProcesses();
+				waitTime[TIME_GPS] = 0.00;
 			}
 		}
 		
@@ -197,20 +191,19 @@ int main()
 		// Heartbeats: Camera CRITICAL
 		if (PMData->Heartbeat.Flags.Camera == 1) {
 			PMData->Heartbeat.Flags.Camera = 0;
-			waitTime.Camera = 0.00;
-			//std::cout << "RESET- CAMERA" << waitTime.Camera<< std::endl;
+			waitTime[TIME_CAMERA] = 0.00;
 		}
 		else {
-			waitTime.Camera += 25;
-			if (waitTime.Camera > TIMEOUT) {
-				//std::cout << "RESTARTING CAMERA: " << waitTime.Camera << std::endl;
-				Console::WriteLine("big sad");
-				StartProcesses();
+			waitTime[TIME_CAMERA] += 25;
+			if (waitTime[TIME_CAMERA] > TIMEOUT) {
+				Console::WriteLine("CAMERA NOT OK: CRITICAL SHUTDOWN");
+				PMData->Shutdown.Status = 0xFF;
+				break;
 			}
 		}
 
-		Sleep(25);
-
+		Sleep(50);
+		
 	}
 	
 	//shutdown after main loop exits

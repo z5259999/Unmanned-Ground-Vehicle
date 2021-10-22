@@ -39,18 +39,18 @@ protected:
 	array<unsigned char>^ ReadData;
 
 	array<String^>^ StringFrags;
-
 	String^ ResponseData;
 
+	// Laser Scanning data
 	double StartAngle;			//Initialise scanning angle
 	double Resolution;			//Step of angular motion
-
-	// Laser Scanning range data
 	double NumRanges;
 	array<double>^ Range;
 	array<double>^ RangeX;
 	array<double>^ RangeY;
 
+	// Shared Memory
 	ProcessManagement* PMData;	// PM Data Pointer
+	SM_Laser* LaserData; // Laser Data Pointer
 
 };
