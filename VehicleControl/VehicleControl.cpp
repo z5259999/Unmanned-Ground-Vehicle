@@ -2,6 +2,8 @@
 #include "SMStructs.h"
 #include "SMObject.h"
 
+#include <math.h>
+
 #include <iostream>
 #include <conio.h>
 
@@ -16,7 +18,37 @@ using namespace System::Text;
 
 int VehicleControl::connect(String^ hostName, int portNumber)
 {
-	// NO CONNECTION!
+	
+	// Create Client
+	Client = gcnew TcpClient(hostName, portNumber);
+
+	// Configure Client (Client defauly 'Settings')
+	Client->NoDelay = true;
+	Client->ReceiveTimeout = 500;
+	Client->SendTimeout = 500;
+	Client->SendBufferSize = 1024;
+	Client->ReceiveBufferSize = 1024;
+
+	// Check Connection Status
+	if (Client->Connected)
+	{
+		Console::WriteLine("Connected to Vehicle Control");
+	}
+	
+	// Array of chars for client reading/writing
+	SendData = gcnew array<unsigned char>(16);
+	ReadData = gcnew array<unsigned char>(2500);
+
+	// Get the current datastream for reading/writing
+	Stream = Client->GetStream();
+
+	SendData = System::Text::Encoding::ASCII->GetBytes(zID);
+	Stream->Write(SendData, 0, SendData->Length);
+	System::Threading::Thread::Sleep(10);
+	Stream->Read(ReadData, 0, ReadData->Length);
+	ResponseData = System::Text::Encoding::ASCII->GetString(ReadData);
+	Console::WriteLine(ResponseData);
+
 	return 1;
 }
 int VehicleControl::setupSharedMemory()
@@ -48,18 +80,25 @@ int VehicleControl::setupSharedMemory()
 }
 int VehicleControl::getData()
 {
-	// NO DATA TO RETRIEVE!
+	VehicleInput = gcnew String("# " + VehicleData->Steering.ToString("F3") + " " + VehicleData->Speed.ToString("F3") + " " + flag + " #");
+	flag = !flag;
+	Console::WriteLine(VehicleInput);
+
 	return 1;
 }
 int VehicleControl::checkData()
 {
-	// NO DATA TO CHECK!
 	return 1;
 }
 int VehicleControl::sendDataToSharedMemory()
 {
-	// NO DATA TO SEND!
+	SendData = System::Text::Encoding::ASCII->GetBytes(VehicleInput);
+	Stream->WriteByte(0x02);
+	Stream->Write(SendData, 0, SendData->Length);
+	Stream->WriteByte(0x03);
+	System::Threading::Thread::Sleep(30);
 	return 1;
+
 }
 bool VehicleControl::getShutdownFlag()
 {
@@ -93,7 +132,8 @@ int VehicleControl::setHeartbeat(bool heartbeat)
 }
 VehicleControl::~VehicleControl()
 {
-	// NO STREAMS OR CLIENTS TO CLOSE!
+	Stream->Close();
+	Client->Close();
 	delete ProcessManagementData;
 	delete SensorData;
 }

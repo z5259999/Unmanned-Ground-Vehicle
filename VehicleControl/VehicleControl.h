@@ -29,6 +29,21 @@ public:
 
 protected:
 	
+	int PortNumber;				//Server PortNum
+	TcpClient^ Client;
+	NetworkStream^ Stream;		//handle for NetworkStream obj
+	System::String^ IPAddress;	//Server IP Address
+	System::String^ zID;		//User zID (z5259999)
+
+	array<unsigned char>^ SendData = nullptr;
+	array<unsigned char>^ ReadData;
+	String^ ResponseData;
+	String^ VehicleInput;
+
+	int flag = 0;
+
 	ProcessManagement* PMData;	// PM Data Pointer
 	SM_VehicleControl* VehicleData;
+
+
 };

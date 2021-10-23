@@ -22,51 +22,20 @@ using namespace System::Text;
 
 int main() 
 {
-	/*
+	
 	VehicleControl VCModule;
 	VCModule.setupSharedMemory();
+	int PortNumber = 25000;
+	String^ hostName = "192.168.1.200";
 
+	VCModule.connect(hostName, PortNumber);
 	while (!VCModule.getShutdownFlag()) {
-
+		VCModule.getData();
+		VCModule.sendDataToSharedMemory();
 		VCModule.setHeartbeat(1);
 	}
 
 	VCModule.~VehicleControl();
-	*/
-
-	double WaitTimeVC = 0.00;
-	SMObject PMObj(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
-	ProcessManagement* PMData = NULL;
-
-	PMObj.SMAccess();
-	if (PMObj.SMAccessError) {
-		Console::WriteLine("ERROR: Process Management SM Object not accessed");
-	}
-
-	PMData = (ProcessManagement*)PMObj.pData;
-
-	while (!PMData->Shutdown.Flags.VehicleControl)
-	{
-		if (PMData->Heartbeat.Flags.VehicleControl == 0) {
-			PMData->Heartbeat.Flags.VehicleControl = 1;
-			WaitTimeVC = 0.00;
-		}
-		else {
-			WaitTimeVC += 25;
-			if (WaitTimeVC > TIMEOUT) {
-				PMData->Shutdown.Status = 0xFF;
-			}
-		}
-
-		Thread::Sleep(100);
-
-		if (PMData->Shutdown.Status) {
-			break;
-		}
-
-	}
-	
-
 
 	return 0;
 }
