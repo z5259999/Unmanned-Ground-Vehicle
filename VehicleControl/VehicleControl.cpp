@@ -112,7 +112,7 @@ int VehicleControl::setHeartbeat(bool heartbeat)
 	double WaitTimeV = 0.00;
 
 	if (PMData->Heartbeat.Flags.VehicleControl == 0) {
-		PMData->Heartbeat.Flags.VehicleControl == 1;
+		PMData->Heartbeat.Flags.VehicleControl = 1;
 		WaitTimeV = 0.00;
 	}
 	else {

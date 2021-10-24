@@ -46,6 +46,6 @@ protected:
 	double high;
 
 	ProcessManagement* PMData;	// PM Data Pointer
-	SM_GPS* GPSData; // Laser Data Pointer
+	SM_GPS* GPSData; // GPS Data Pointer
 };
 

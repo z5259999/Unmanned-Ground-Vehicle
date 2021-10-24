@@ -47,6 +47,7 @@ void reshape(int width, int height);
 void idle();
 
 void laserDraw();
+void GPSDraw();
 
 void keydown(unsigned char key, int x, int y);
 void keyup(unsigned char key, int x, int y);
@@ -368,12 +369,17 @@ void laserDraw()
 
 		glBegin(GL_LINES);
 		for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
-			glVertex3f(0.0f, 1.0f, 0.0f);
-			glVertex3f(0.0f, 0.0f, 0.0f);
+			glVertex3f(LaserData->x[i]/1000, 0.0f, LaserData->y[i] / 1000);
+			glVertex3f(LaserData->x[i] / 1000, 1.0f, LaserData->y[i] / 1000);
 		}
 		glEnd();
 	}
 
 	glPopMatrix();
+
+}
+
+void GPSDraw()
+{
 
 }
