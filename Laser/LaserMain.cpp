@@ -35,7 +35,7 @@ int main() {
 
 	LaserModule.connect(hostName, PortNumber);
 	while (!LaserModule.getShutdownFlag()) {
-		LaserModule.getData();
+		//LaserModule.getData();
 		LaserModule.checkData();
 		LaserModule.sendDataToSharedMemory();
 		LaserModule.setHeartbeat(1);

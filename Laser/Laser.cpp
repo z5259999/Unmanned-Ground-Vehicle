@@ -20,49 +20,27 @@ using namespace System::Net::Sockets;
 using namespace System::Net;
 using namespace System::Text;
 
-int Laser::connect(String^ hostName, int portNumber) {
-
-	// Create Client
+int Laser::connect(String^ hostName, int portNumber)
+{
 	Client = gcnew TcpClient(hostName, portNumber);
-	
-	// Configure Client (Client defauly 'Settings')
 	Client->NoDelay = true;
 	Client->ReceiveTimeout = 500;
 	Client->SendTimeout = 500;
-	Client->SendBufferSize = 1024;
 	Client->ReceiveBufferSize = 1024;
-
-	// Check Connection Status
-	if (Client->Connected)
-	{
-		Console::WriteLine("Connected to Laser");
-	}
-
-	// Initialise strings for data
-	zID = gcnew String("z5259999\n");
-	ScanReq = gcnew String("sRN LMDscandata");
-
-	// Array of chars for client reading/writing
+	Client->SendBufferSize = 1024;
 	SendData = gcnew array<unsigned char>(16);
 	ReadData = gcnew array<unsigned char>(2500);
-
-	// Get the current datastream for reading/writing
 	Stream = Client->GetStream();
-
-	// String to unisgned char, used to identify user
+	zID = gcnew String("5259999\n");
+	ScanReq = gcnew String("sRN LMDscandata");
 	SendData = System::Text::Encoding::ASCII->GetBytes(zID);
 	Stream->Write(SendData, 0, SendData->Length);
-	
-	// Wait, then read incoming datastream, assign to ResponseData
 	System::Threading::Thread::Sleep(10);
 	Stream->Read(ReadData, 0, ReadData->Length);
 	ResponseData = System::Text::Encoding::ASCII->GetString(ReadData);
-
 	Console::WriteLine(ResponseData);
-	SendData = System::Text::Encoding::ASCII->GetBytes(ScanReq);	
-
+	SendData = System::Text::Encoding::ASCII->GetBytes(ScanReq);
 	return 1;
-
 }
 
 int Laser::setupSharedMemory() {
@@ -93,53 +71,50 @@ int Laser::setupSharedMemory() {
 
 }
 
-int Laser::getData() {
+int Laser::getData()
+{
 
-	// Data transmission: start (0x02) -> stop (0x03)
-	Stream->WriteByte(0x02);
-	Stream->Write(SendData, 0, SendData->Length);
-	Stream->WriteByte(0x03);
-	
-	// Read incoming datastream
-	System::Threading::Thread::Sleep(10);
-	Stream->Read(ReadData, 0, ReadData->Length);
 
-	// Convert unsigned char to string
-	System::Text::Encoding::ASCII->GetString(ReadData);
-
+	// YOUR CODE HERE
 	return 1;
 }
-
-int Laser::checkData() {
-
+int Laser::checkData()
+{
+	Stream->WriteByte(0x02);
+	// Write command asking for data
+	Stream->Write(SendData, 0, SendData->Length);
+	Stream->WriteByte(0x03);
+	// Wait for the server to prepare the data, 1 ms would be sufficient, but used 10 ms
+	System::Threading::Thread::Sleep(10);
+	// Read the incoming data
+	Stream->Read(ReadData, 0, ReadData->Length);
+	// Convert incoming data from an array of unsigned char bytes to an ASCII string
+	ResponseData = System::Text::Encoding::ASCII->GetString(ReadData);
+	//Remove ":" from the string
 	ResponseData = ResponseData->Replace(":", "");
-	StringFrags = ResponseData->Split(' ');
 
-	Console::WriteLine(StringFrags[1]);
+	StringArray = ResponseData->Split(' ');
+	StartAngle = System::Convert::ToInt32(StringArray[23], 16);
+	Resolution = System::Convert::ToInt32(StringArray[24], 16) / 10000.0;
+	NumRanges = System::Convert::ToInt32(StringArray[25], 16);
 
 	Range = gcnew array<double>(NumRanges);
 	RangeX = gcnew array<double>(NumRanges);
 	RangeY = gcnew array<double>(NumRanges);
-
-	StartAngle = System::Convert::ToInt32(StringFrags[23], 16);
-	Resolution = System::Convert::ToInt32(StringFrags[24], 16) / 10000.0;
-	NumRanges = System::Convert::ToInt32(StringFrags[25], 16);
-
-	// Polar to Cartesian
 	for (int i = 0; i < NumRanges; i++)
 	{
-		Range[i] = System::Convert::ToInt32(StringFrags[26 + i], 16);
+		Range[i] = System::Convert::ToInt32(StringArray[26 + i], 16);
 		RangeX[i] = Range[i] * Math::Sin(i * Resolution * Math::PI / 180.0);
-		RangeY[i] = Range[i] * Math::Cos(i * Resolution * Math::PI / 180.0);
+		RangeY[i] = -Range[i] * Math::Cos(i * Resolution * Math::PI / 180.0);
 
-		Console::WriteLine("Resolution: {0, 0:F3}", i * Resolution);
-
+		// Print the received string on the screen
+		Console::WriteLine("The angle is: {0:F}", i * Resolution);
+		Console::WriteLine("The X coordinate is: {0:F}", RangeX[i]);
+		Console::WriteLine("The Y coordinate is: {0:F}", RangeY[i]);
 	}
 
 	return 1;
-
 }
-
 int Laser::sendDataToSharedMemory() {
 
 	for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {

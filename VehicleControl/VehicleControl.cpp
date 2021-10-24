@@ -34,6 +34,9 @@ int VehicleControl::connect(String^ hostName, int portNumber)
 	{
 		Console::WriteLine("Connected to Vehicle Control");
 	}
+
+	zID = gcnew String("5259999\n");
+
 	
 	// Array of chars for client reading/writing
 	SendData = gcnew array<unsigned char>(16);
