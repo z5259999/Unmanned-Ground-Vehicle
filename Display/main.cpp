@@ -46,6 +46,8 @@ void display();
 void reshape(int width, int height);
 void idle();
 
+void laserDraw();
+
 void keydown(unsigned char key, int x, int y);
 void keyup(unsigned char key, int x, int y);
 void special_keydown(int keycode, int x, int y);
@@ -66,24 +68,39 @@ using namespace System::Threading;
 int prev_mouse_x = -1;
 int prev_mouse_y = -1;
 
+//Shared memory
+SMObject PMObj(TEXT("ProcessManagement"), sizeof(ProcessManagement));
+SMObject LaserObj(TEXT("LaserSMObject"), sizeof(SM_Laser));
+
 // vehicle control related variables
 Vehicle* vehicle = NULL;
 double speed = 0;
 double steering = 0;
+
+ProcessManagement* PMData = nullptr;
+SM_Laser* LaserData = nullptr;
 SMObject* PMObjPtr;
 
 //int _tmain(int argc, _TCHAR* argv[]) {
 int main(int argc, char** argv) {
 
-	//Shared memory
-	SMObject PMObj(TEXT("ProcessManagement"), sizeof(ProcessManagement));
-	//SM Creation and Seeking access 
+	
+	
+	//SM Seeking access 
 	PMObj.SMAccess();
 	if (PMObj.SMAccessError) {
 		Console::WriteLine("Error - PM shared memory could not be accessed.");
 	}
 
-	PMObjPtr = &PMObj;
+	LaserObj.SMAccess();
+	if (LaserObj.SMAccessError) {
+		Console::WriteLine("Error - Laser shared memory could not be accessed.");
+	}
+
+	PMData = (ProcessManagement*)PMObj.pData;
+	LaserData = (SM_Laser*)LaserObj.pData;
+
+	PMData->Shutdown.Flags.Display = 0;
 
 	const int WINDOW_WIDTH = 800;
 	const int WINDOW_HEIGHT = 600;
@@ -196,7 +213,7 @@ void idle() {
 
 	double WaitAndSee = 0.00;
 
-	ProcessManagement* PMData = (ProcessManagement*)PMObjPtr->pData;
+	//ProcessManagement* PMData = (ProcessManagement*)PMObjPtr->pData;
 
 	if (PMData->Heartbeat.Flags.Display == 0) { //Check that PM has set the flag down 
 		PMData->Heartbeat.Flags.Display = 1; //set the flag up 
@@ -340,3 +357,23 @@ void motion(int x, int y) {
 	prev_mouse_x = x;
 	prev_mouse_y = y;
 };
+
+void laserDraw()
+{
+	glPushMatrix();
+
+	for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
+		
+		glLineWidth(2);
+
+		glBegin(GL_LINES);
+		for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
+			glVertex3f(0.0f, 1.0f, 0.0f);
+			glVertex3f(0.0f, 0.0f, 0.0f);
+		}
+		glEnd();
+	}
+
+	glPopMatrix();
+
+}
