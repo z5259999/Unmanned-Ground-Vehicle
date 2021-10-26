@@ -20,6 +20,7 @@ int main() {
 	GPS GPSModule;
 	GPSModule.setupSharedMemory();
 
+	// A
 	int PortNumber = 24000;
 	String^ hostName = "192.168.1.200";
 
