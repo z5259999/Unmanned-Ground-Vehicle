@@ -90,6 +90,7 @@ int GPS::getData()
 		Console::WriteLine("Northing: {0,10:F3}", GPSData->northing);
 		Console::WriteLine("Easting: {1,10:F3}", GPSData->easting);
 		Console::WriteLine("Height: {2,10:F3}", GPSData->height);
+
 	}
 
 	return 1;
