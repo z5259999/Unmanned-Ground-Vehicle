@@ -69,23 +69,25 @@ using namespace System::Threading;
 int prev_mouse_x = -1;
 int prev_mouse_y = -1;
 
-//Shared memory
-SMObject PMObj(TEXT("ProcessManagement"), sizeof(ProcessManagement));
-SMObject LaserObj(TEXT("LaserSMObject"), sizeof(SM_Laser));
-
 // vehicle control related variables
 Vehicle* vehicle = NULL;
 double speed = 0;
 double steering = 0;
 
+//Shared memory
+SMObject PMObj(TEXT("ProcessManagement"), sizeof(ProcessManagement));
+SMObject LaserObj(TEXT("LaserSMObject"), sizeof(SM_Laser));
+SMObject GPSObj(TEXT("GPSSMObject"), sizeof(SM_GPS));
+SMObject VCObj(TEXT("VCObject"), sizeof(SM_VehicleControl));
+
 ProcessManagement* PMData = nullptr;
 SM_Laser* LaserData = nullptr;
-SMObject* PMObjPtr;
+SM_GPS* GPSData = nullptr;
+SM_VehicleControl* VehicleData = nullptr;
 
 //int _tmain(int argc, _TCHAR* argv[]) {
 int main(int argc, char** argv) {
 
-	
 	
 	//SM Seeking access 
 	PMObj.SMAccess();
@@ -100,6 +102,8 @@ int main(int argc, char** argv) {
 
 	PMData = (ProcessManagement*)PMObj.pData;
 	LaserData = (SM_Laser*)LaserObj.pData;
+	GPSData = (SM_GPS*)GPSObj.pData;
+	VehicleData = (SM_VehicleControl*)VCObj.pData;
 
 	PMData->Shutdown.Flags.Display = 0;
 
@@ -177,6 +181,7 @@ void display() {
 	}
 
 	laserDraw();
+	GPSDraw();
 
 
 	// draw HUD
@@ -277,8 +282,8 @@ void idle() {
 		speed = Vehicle::MAX_BACKWARD_SPEED_MPS;
 	}
 
-
-
+	VehicleData->Steering = steering;
+	VehicleData->Speed = speed;
 
 	const float sleep_time_between_frames_in_seconds = 0.025;
 
@@ -363,19 +368,21 @@ void motion(int x, int y) {
 
 void laserDraw()
 {
+
+	vehicle->positionInGL();
+	glTranslated(0.5, 0, 0);
+
 	glPushMatrix();
 
+	glBegin(GL_LINES);
 	for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
-		
+		glColor3f(1, 1, 1);
 		glLineWidth(2);
-
-		glBegin(GL_LINES);
-		for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
-			glVertex3f(LaserData->x[i]/1000, 0.0f, LaserData->y[i] / 1000);
-			glVertex3f(LaserData->x[i] / 1000, 1.0f, LaserData->y[i] / 1000);
-		}
-		glEnd();
+		glVertex3f(LaserData->x[i]/1000, 0.0f, -LaserData->y[i] / 1000);
+		glVertex3f(LaserData->x[i] / 1000, 1.0f, -LaserData->y[i] / 1000);
 	}
+	glEnd();
+	
 
 	glPopMatrix();
 
@@ -383,5 +390,19 @@ void laserDraw()
 
 void GPSDraw()
 {
+	Camera::get()->switchTo2DDrawing();
+	int widthOffset = (Camera::get()->getWindowWidth() - 800) * 0.5;
+	if (widthOffset < 0) {
+		widthOffset = 0;
+	}
 
+	char buffer[80];
+	if (vehicle) {
+		glColor3f(1, 1, 1);
+		sprintf(buffer, "Northing % .4f  Easting : % .4f  Height : % .4f", GPSData->northing,
+			GPSData->easting, GPSData->height);
+		HUD::RenderString(buffer, 0, 20, GLUT_BITMAP_HELVETICA_12);
+	}
+
+	Camera::get()->switchTo3DDrawing();
 }

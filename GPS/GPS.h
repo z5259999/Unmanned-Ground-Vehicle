@@ -10,12 +10,10 @@ unsigned long CalculateBlockCRC32(unsigned long ulCount, unsigned char* ucBuffer
 
 struct GPSContents {
 	unsigned int Header;
-	unsigned char Discard1[40];
-	unsigned char Discard2[40];
 	double Northing;
 	double Easting;
 	double Height;
-	unsigned int Checksum;
+	unsigned int CRC;
 };
 
 ref class GPS : public UGV_module
@@ -39,6 +37,7 @@ protected:
 	String^ PortName;
 	array<unsigned char>^ SendData;
 	array<unsigned char>^ ReadData;
+	array<unsigned char>^ RecvData;
 	unsigned int Checksum;
 	int Start;
 	double east;

@@ -15,6 +15,11 @@ using namespace System::Text;
 
 int GPS::connect(String^ hostName, int portNumber)
 {
+
+	// Array of chars for client reading/writing
+	SendData = gcnew array<unsigned char>(16);
+	RecvData = gcnew array<unsigned char>(224);
+
 	// Create Client
 	Client = gcnew TcpClient(hostName, portNumber);
 
@@ -30,10 +35,6 @@ int GPS::connect(String^ hostName, int portNumber)
 	{
 		Console::WriteLine("Connected to GPS");
 	}
-
-	// Array of chars for client reading/writing
-	SendData = gcnew array<unsigned char>(16);
-	ReadData = gcnew array<unsigned char>(224);
 
 	// Get the current datastream for reading/writing
 	Stream = Client->GetStream();
@@ -73,23 +74,31 @@ int GPS::getData()
 
 	unsigned char* BytePtr = nullptr;
 	BytePtr = (unsigned char*)&GNSS;
+
+	unsigned char* StartBlock = nullptr;
+	StartBlock = (unsigned char*)&GNSS;
+
 	int debugFlag = 1;
 
 	if (Stream->DataAvailable) {
-		Stream->Read(ReadData, 0, ReadData->Length);
+		
+		Stream->Read(RecvData, 0, RecvData->Length);
 		Start = checkData();
 		for (int i = Start; i < Start + sizeof(GNSS); i++) {
-			*(BytePtr++) = ReadData[i];
+			*(BytePtr++) = RecvData[i];
 		}
 
-		east = GNSS.Easting;
-		north = GNSS.Northing;
-		high = GNSS.Height;
+		unsigned long temp = CalculateBlockCRC32(sizeof(GPSContents) - 4, StartBlock);
+		if (GNSS.CRC == temp) {
+			east = GNSS.Easting;
+			north = GNSS.Northing;
+			high = GNSS.Height;
 
-		sendDataToSharedMemory();
-		Console::WriteLine("Northing: {0,10:F3}", GPSData->northing);
-		Console::WriteLine("Easting: {1,10:F3}", GPSData->easting);
-		Console::WriteLine("Height: {2,10:F3}", GPSData->height);
+			sendDataToSharedMemory();
+			Console::WriteLine("Northing: {0,10:F3}", GPSData->northing);
+			Console::WriteLine("Easting: {1,10:F3}", GPSData->easting);
+			Console::WriteLine("Height: {2,10:F3}", GPSData->height);
+		}
 
 	}
 
@@ -102,7 +111,7 @@ int GPS::checkData()
 	unsigned char Data;
 	do
 	{
-		Data = ReadData[i++];
+		Data = RecvData[i++];
 		Header = ((Header << 8) | Data); //shift header by 8 bits
 	} while (Header != 0xaa44121c);
 	Start = i - 4;
