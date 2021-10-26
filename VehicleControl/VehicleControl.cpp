@@ -22,7 +22,7 @@ int VehicleControl::connect(String^ hostName, int portNumber)
 	// Create Client
 	Client = gcnew TcpClient(hostName, portNumber);
 
-	// Configure Client (Client defauly 'Settings')
+	// Configure Client (Client default 'Settings')
 	Client->NoDelay = true;
 	Client->ReceiveTimeout = 500;
 	Client->SendTimeout = 500;
@@ -34,7 +34,9 @@ int VehicleControl::connect(String^ hostName, int portNumber)
 	{
 		Console::WriteLine("Connected to Vehicle Control");
 	}
-	
+
+	zID = gcnew String("5259999\n");
+
 	// Array of chars for client reading/writing
 	SendData = gcnew array<unsigned char>(16);
 	ReadData = gcnew array<unsigned char>(2500);

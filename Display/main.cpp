@@ -176,6 +176,8 @@ void display() {
 
 	}
 
+	laserDraw();
+
 
 	// draw HUD
 	HUD::Draw();

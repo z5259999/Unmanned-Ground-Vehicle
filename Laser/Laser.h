@@ -38,7 +38,7 @@ protected:
 	array<unsigned char>^ SendData;
 	array<unsigned char>^ ReadData;
 
-	array<String^>^ StringFrags;
+	array<String^>^ StringArray;
 	String^ ResponseData;
 
 	// Laser Scanning data

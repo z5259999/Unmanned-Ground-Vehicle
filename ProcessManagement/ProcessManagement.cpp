@@ -30,8 +30,8 @@ void StartProcesses();
 //defining start up sequence
 TCHAR Units[10][20] = //
 {
-	TEXT("Laser.exe"),
-	TEXT("VehicleControl.exe"),
+	TEXT("Laser33.exe"),
+	TEXT("VehicleControl4.exe"),
 	TEXT("Display.exe"),
 	TEXT("GPS.exe"),
 	TEXT("Camera.exe"),
@@ -135,7 +135,7 @@ int main()
 			if (waitTime[TIME_LASER] > TIMEOUT) {
 				Console::WriteLine("Laser NOT OK: CRITICAL SHUTDOWN");
 				PMData->Shutdown.Status = 0xFF;
-				break;
+				//break;
 			}
 		}
 		
