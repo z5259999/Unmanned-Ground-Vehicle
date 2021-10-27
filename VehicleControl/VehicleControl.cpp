@@ -17,12 +17,12 @@ using namespace System::Text;
 
 int VehicleControl::connect(String^ hostName, int portNumber)
 {
-
+	
 	StudID = gcnew String("5259999\n");
 
 	Client = gcnew TcpClient(hostName, portNumber);
 
-	Client->NoDelay = true;
+	Client->NoDelay = true; 
 	Client->ReceiveTimeout = 500;
 	Client->SendTimeout = 500;
 	Client->ReceiveBufferSize = 1024;

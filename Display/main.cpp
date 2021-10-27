@@ -198,60 +198,49 @@ void display() {
 };
 
 void drawLaser() {
-	static GLUquadric* laserQuad = gluNewQuadric();
-	double x = 0, y = vehicle->getY() + 0.03, z = 0;
+	
 	glPushMatrix();
-	for (int i = 1; i < STANDARD_LASER_LENGTH; i++) {
-		glColor3f(0.3, 0.7, 0.8);
-		glTranslatef(LaserData->x[i] / 1000 - x, y, LaserData->y[i] / 1000 - z);
-		x = LaserData->x[i] / 1000;
-		z = LaserData->y[i] / 1000;
-		y = 0;
-		Console::WriteLine(" {0, 4:F3}  {1, 4:F3}  {2, 4:F3} ", LaserData->x[i] / 1000 + x, 0.3, LaserData->y[i] / 1000 + y);
-		glPushMatrix();
-		glRotatef(-90, 1, 0, 0);
-		gluCylinder(laserQuad, 0.02, 0.02, 1, 12, 1);
-		glPopMatrix();
+	for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
+		
+		// Set to white lines of 2 thickness (pixels?)
+		glColor3f(1, 1, 1);
+		glLineWidth(2);
+
+		// Divided by 1000 to get m, -y to reflect the demo code
+		double xPos = (LaserData->x[i] / 1000);
+		double yPos = -(LaserData->y[i] / 1000);
+
+		// Create one vertext at xPos, yPos, then create second point 1 unit above to make line
+		glVertex3f(xPos, 0, yPos);
+		glVertex3f(xPos, 1, yPos);
+
 	}
 
-	glPopMatrix();
+	glBegin(GL_LINES);
+
 	glEnd();
+	glPopMatrix();
 
 }
 
 void drawGPS() {
 
 	Camera::get()->switchTo2DDrawing();
+	
 	int winWidthOff = (Camera::get()->getWindowWidth() - 800) * .5;
-	if (winWidthOff < 0)
+	
+	if (winWidthOff < 0) {
 		winWidthOff = 0;
-
-	glColor3f(0.3, 0.7, 0.4);
-	double x = 130 + winWidthOff;
-	double y = 600;
-	char GPSLabel[250];
-	sprintf(GPSLabel, "Northing: %.4f  Easting: %.4f  Height: %.4f", GPSData->northing,
-		GPSData->easting, GPSData->height);
-
-	double r = 4;
-
-	glPushMatrix();
-	double r1 = r;
-	double r2 = r * 1.05;
-
-	const double centerR = -90;
-	const double startR = centerR - 50;
-	const double endR = centerR + 50;
-
-	glTranslatef(x, y, 0);
-	glDisable(GL_LIGHTING);
-
-	y = sin((startR)*DEGTORAD);
-	// text label
-	//renderString(label, strlen(label) * 10 * -.25, -r1 + 20, GLUT_BITMAP_HELVETICA_10);
-	HUD::RenderString(GPSLabel, strlen(GPSLabel) * 10 * -.25, (r1 - 20) * y - 20, GLUT_BITMAP_HELVETICA_18);
-
-	glPopMatrix();
+	}
+		
+	char buffer[80];
+	if (vehicle) {
+		//White
+		glColor3f(1, 1, 1);
+		sprintf(buffer, "Northing: % .4f  Easting: % .4f  Height: % .4f", GPSData->northing,
+			GPSData->easting, GPSData->height);
+		HUD::RenderString(buffer, 0, 20, GLUT_BITMAP_HELVETICA_12);
+	}
 
 	Camera::get()->switchTo3DDrawing();
 
