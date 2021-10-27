@@ -160,11 +160,6 @@ int main(int argc, char** argv) {
 
 void display() {
 
-	// -------------------------------------------------------------------------
-	//  This method is the main draw routine. 
-	// -------------------------------------------------------------------------
-	Console::WriteLine("yo doggy");
-
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glMatrixMode(GL_MODELVIEW);
@@ -199,7 +194,9 @@ void display() {
 
 void drawLaser() {
 	
+
 	glPushMatrix();
+	glBegin(GL_LINES);
 	for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
 		
 		// Set to white lines of 2 thickness (pixels?)
@@ -215,8 +212,6 @@ void drawLaser() {
 		glVertex3f(xPos, 1, yPos);
 
 	}
-
-	glBegin(GL_LINES);
 
 	glEnd();
 	glPopMatrix();

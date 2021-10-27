@@ -27,11 +27,11 @@ void StartProcesses();
 
 TCHAR Units[10][20] = //
 {
-	TEXT("Laser.exe"),
-	TEXT("Vehicle.exe"),
-	TEXT("Display5.exe"),
-	TEXT("GPS.exe"),
-	TEXT("Camera.exe")
+	TEXT("LaserMod.exe"),
+	TEXT("VehicleMod.exe"),
+	TEXT("DisplayMod.exe"),
+	TEXT("GPSMod.exe"),
+	TEXT("CameraMod.exe")
 };
 
 

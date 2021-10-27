@@ -34,7 +34,7 @@ protected:
 	String^ StudID;
 	String^ ResponseData;
 	String^ VehicleInput;
-	bool flag = 0;
+	int flag = 0;
 
 	ProcessManagement* PMData;
 	SM_VehicleControl* VehicleControl;
