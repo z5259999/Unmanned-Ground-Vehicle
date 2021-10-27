@@ -1,37 +1,34 @@
 
-#include "GPS.h"
-#include "SMStructs.h"
-#include <SMObject.h>
-
-#include <iostream>
+#using <System.dll>
+#include <Windows.h>
 #include <conio.h>
+#include "GPS.h" 
 
+#include <SMObject.h>
+#include <smstructs.h>
+
+using namespace System;
 using namespace System::Diagnostics;
 using namespace System::Threading;
-using namespace System;
-using namespace System::Net::Sockets;
-using namespace Net;
-using namespace Sockets;
-using namespace System::Net;
-using namespace System::Text;
 
-int main() {
-	
-	GPS GPSModule;
-	GPSModule.setupSharedMemory();
+int main()
+{
+	GPS GPSClass;
 
-	// A
+	GPSClass.setupSharedMemory();
+
 	int PortNumber = 24000;
-	String^ hostName = "192.168.1.200";
+	String^ HostName = "192.168.1.200";
+	GPSClass.connect(HostName, PortNumber);
 
-	GPSModule.connect(hostName, PortNumber);
-	while (!GPSModule.getShutdownFlag()) {
-		GPSModule.getData();
-		GPSModule.checkData();
-		GPSModule.sendDataToSharedMemory();
-		GPSModule.setHeartbeat(1);
+	while (!GPSClass.getShutdownFlag()) {
+
+		GPSClass.getData();
+		GPSClass.setHeartbeat(1);
+
 	}
 
-	GPSModule.~GPS();
+	GPSClass.~GPS();
+
 	return 0;
 }

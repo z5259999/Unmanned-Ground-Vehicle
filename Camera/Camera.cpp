@@ -11,6 +11,8 @@
 
 #include <turbojpeg.h>
 
+using namespace System::Threading;
+
 void display();
 void idle();
 
@@ -18,28 +20,23 @@ GLuint tex;
 
 //ZMQ settings
 zmq::context_t context(1);
+
 zmq::socket_t subscriber(context, ZMQ_SUB);
 
-// Shared Memory Declarations
-double waitAndSeeCamera = 0.00;
-SMObject* PMObjPtr;
+SMObject PMObj(TEXT("ProcessManagement"), sizeof(ProcessManagement));
+ProcessManagement* PMData = nullptr;
+
 
 int main(int argc, char** argv)
 {
-	// Establishing Shared Memory Objects
-	SMObject PMObj(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
-	
-	PMObj.SMAccess();
-	if (PMObj.SMAccessError) {
-		Console::WriteLine("ERROR: Process Management SM Object not accessed");
-	}
-
-	PMObjPtr = &PMObj;
-	
 	//Define window size
 	const int WINDOW_WIDTH = 800;
 	const int WINDOW_HEIGHT = 600;
 
+	//PMObj.SMCreate();
+	PMObj.SMAccess();
+	PMData = (ProcessManagement*)PMObj.pData;
+	PMData->Shutdown.Flags.Camera = 0;
 	//GL Window setup
 	glutInit(&argc, (char**)(argv));
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
@@ -77,22 +74,32 @@ void display()
 	glEnd();
 	glutSwapBuffers();
 }
+
+
 void idle()
 {
-	ProcessManagement* PMData = (ProcessManagement*)PMObjPtr->pData;
 
-	// Heartbeats: Camera CRITICAL
+	double WaitAndSee = 0.00;
+
 	if (PMData->Heartbeat.Flags.Camera == 0) {
 		PMData->Heartbeat.Flags.Camera = 1;
-		waitAndSeeCamera = 0.00;
+
+		//Debugging
+		//Console::WriteLine("HB Camera: " + PMData->Heartbeat.Flags.Camera);
+
+		WaitAndSee = 0.00;
 	}
 	else {
-		waitAndSeeCamera += 25;
-		if (waitAndSeeCamera > TIMEOUT) {
+		WaitAndSee += 25;
+		if (WaitAndSee > TIMEOUT) {
 			PMData->Shutdown.Status = 0xFF;
 		}
 	}
-	
+	Thread::Sleep(25);
+
+	if (PMData->Shutdown.Status) {
+		exit(0);
+	}
 
 	//receive from zmq
 	zmq::message_t update;

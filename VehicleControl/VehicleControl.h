@@ -1,18 +1,18 @@
 #pragma once
-#using <System.dll>
-#include <SMObject.h>
-#include <SMStructs.h>
-#include <windows.h>
-#include <conio.h>
-#include <iostream>
 #include <UGV_module.h>
-#include "smstructs.h"
+#include <SMObject.h>
+#include <smstructs.h>
+#using <System.dll>
+#include <Windows.h>
 
 
 using namespace System;
+using namespace System::Diagnostics;
+using namespace System::Threading;
 using namespace System::Net::Sockets;
 using namespace System::Net;
 using namespace System::Text;
+
 
 ref class VehicleControl : public UGV_module
 {
@@ -28,22 +28,22 @@ public:
 	~VehicleControl();
 
 protected:
+	ProcessManagement* PMData;
+	SM_VehicleControl* VehicleControl;
 	
-	int PortNumber;				//Server PortNum
-	TcpClient^ Client;
-	NetworkStream^ Stream;		//handle for NetworkStream obj
-	System::String^ IPAddress;	//Server IP Address
-	System::String^ zID;		//User zID (z5259999)
-
+	double TimeStamp;
+	__int64 Frequency;
+	__int64 Counter;
+	int Shutdown;
+	
 	array<unsigned char>^ SendData = nullptr;
-	array<unsigned char>^ ReadData;
+	String^ AskScan;
+	String^ StudID;
 	String^ ResponseData;
 	String^ VehicleInput;
-
 	int flag = 0;
-
-	ProcessManagement* PMData;	// PM Data Pointer
-	SM_VehicleControl* VehicleData;
 
 
 };
+
+

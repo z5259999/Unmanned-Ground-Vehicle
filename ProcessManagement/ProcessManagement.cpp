@@ -1,9 +1,4 @@
 
-// Credited Authors: Jay Katupitiya, James Stevens
-// Codebase (Heartbeats) derived from week 4 Pre-recorded videos [Accessed from 1 Oct 2021] 
-// Available: https://moodle.telt.unsw.edu.au/mod/resource/view.php?id=4062689
-
-
 #using <System.dll>
 #include <Windows.h>
 #include <tchar.h>
@@ -12,12 +7,15 @@
 #include <iostream>
 #include <conio.h>
 
-#include "SMStructs.h"
-#include "SMObject.h"
+//paste all the SMObject into the source files folder for each of the sections
+#include <SMObject.h>
+#include <smstructs.h>	
 
+
+
+using namespace System;
 using namespace System::Diagnostics;
 using namespace System::Threading;
-using namespace System;
 using namespace System::Net::Sockets;
 using namespace System::Net;
 using namespace System::Text;
@@ -27,30 +25,26 @@ using namespace System::Text;
 bool IsProcessRunning(const char* processName);
 void StartProcesses();
 
-//defining start up sequence
 TCHAR Units[10][20] = //
 {
-	TEXT("Laser33.exe"),
-	TEXT("VehicleControl4.exe"),
-	TEXT("Display.exe"),
+	TEXT("Laser.exe"),
+	TEXT("Vehicle.exe"),
+	TEXT("Display5.exe"),
 	TEXT("GPS.exe"),
-	TEXT("Camera.exe"),
+	TEXT("Camera.exe")
 };
 
-int main()
-{
-	
-	// Create array to keep the waitAndSee times
-	double waitTime[5] = {0.00, 0.00, 0.00, 0.00, 0.00};
 
-	
-	///////////////////////////PM///////////////////////////////////////
+int main() {
 
-	SMObject PMObj(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
-	ProcessManagement* PMData = NULL;
+	// Shared Memory Creation and Access
+
+	//////////////////////////////PM////////////////////////////////////
 	
+	SMObject PMObj(TEXT("ProcessManagement"), sizeof(ProcessManagement));
+
 	PMObj.SMCreate();
-	if(PMObj.SMCreateError) {
+	if (PMObj.SMCreateError) {
 		Console::WriteLine("ERROR: Process Management SM Object not created");
 	}
 	PMObj.SMAccess();
@@ -58,160 +52,175 @@ int main()
 		Console::WriteLine("ERROR: Process Management SM Object not accessed");
 	}
 
-	PMData = (ProcessManagement*)PMObj.pData;
-
+	ProcessManagement* PMData = (ProcessManagement*)PMObj.pData;
 
 	///////////////////////////LASER///////////////////////////////////
+	
+	SMObject LaserSMObject(TEXT("LaserSMObject"), sizeof(SM_Laser));
 
-	SMObject LaserObj(_TEXT("Laser"), sizeof(SM_Laser));
-	SM_Laser* LaserData = NULL;
-
-	LaserObj.SMCreate();
-	if (LaserObj.SMCreateError) {
+	LaserSMObject.SMCreate();
+	if (LaserSMObject.SMCreateError) {
 		Console::WriteLine("ERROR: Laser SM Object not created");
 	}
-	LaserObj.SMAccess();
-	if (LaserObj.SMAccessError) {
+	LaserSMObject.SMAccess();
+	if (LaserSMObject.SMAccessError) {
 		Console::WriteLine("ERROR: Laser SM Object not accessed");
 	}
 
-	LaserData = (SM_Laser*)LaserObj.pData;
+	SM_Laser* LaserData = (SM_Laser*)LaserSMObject.pData;
 
+	///////////////////////////Vehicle/////////////////////////////////
+	
+	SMObject VehicleSMObject(TEXT("VehicleSMObject"), sizeof(SM_VehicleControl));
 
-	///////////////////////Vehicle Control////////////////////////////
-
-	SMObject VCObj(_TEXT("VehicleControl"), sizeof(SM_VehicleControl));
-	SM_VehicleControl* VCData = NULL;
-
-	VCObj.SMCreate();
-	if (VCObj.SMCreateError) {
+	VehicleSMObject.SMCreate();
+	if (VehicleSMObject.SMCreateError) {
 		Console::WriteLine("ERROR: Vehicle Control SM Object not created");
 	}
-	VCObj.SMAccess();
-	if (VCObj.SMAccessError) {
+	VehicleSMObject.SMAccess();
+	if (VehicleSMObject.SMAccessError) {
 		Console::WriteLine("ERROR: Vehicle Control SM Object not accessed");
 	}
 
-	VCData = (SM_VehicleControl*)VCObj.pData;
+	SM_VehicleControl* VehicleData = (SM_VehicleControl*)VehicleSMObject.pData;
 
+	/////////////////////////////GPS///////////////////////////////////
+	
+	SMObject GPSSMObject(TEXT("GPSSMObject"), sizeof(SM_GPS));
 
-	///////////////////////////GPS////////////////////////////////////
-
-	SMObject GPSObj(_TEXT("GPS"), sizeof(SM_GPS));
-	SM_GPS* GPSData = NULL;
-
-	GPSObj.SMCreate();
-	if (GPSObj.SMCreateError) {
+	GPSSMObject.SMCreate();
+	if (GPSSMObject.SMCreateError) {
 		Console::WriteLine("ERROR: GPS SM Object not created");
 	}
-	GPSObj.SMAccess();
-	if (GPSObj.SMAccessError) {
+	GPSSMObject.SMAccess();
+	if (GPSSMObject.SMAccessError) {
 		Console::WriteLine("ERROR: GPS SM Object not accessed");
 	}
 
-	GPSData = (SM_GPS*)GPSObj.pData;
+	SM_GPS* GPSData = (SM_GPS*)GPSSMObject.pData;
 
-	//////////////////////////////////////////////////////////////////
 
-	//start all 5 modules
+	///////////////////////////////////////////////////////////////////
+
+	PMData->PMHeartbeat.Status = 0xFF;
+
 	StartProcesses();
-	PMData->Shutdown.Status = 0x00;
+
+	int LaserCounter = 0;
+	int DisplayCounter = 0;
+	int GPSCounter = 0;
+	int VehicleCounter = 0;
+	int CameraCounter = 0;
+
+	double waitTime[5] = { 0.00, 0.00, 0.00, 0.00, 0.00 };
 
 	while (!_kbhit()) {
 
-		
+		PMData->PMHeartbeat.Status = 0xFF;
+
 		///////////////////////////LASER///////////////////////////////////
-		
 		// Heartbeats: Laser CRITICAL
-		// Flip the flag from 1 to 0 - Communicates with Laser.cpp
 		if (PMData->Heartbeat.Flags.Laser == 1) {
+			LaserCounter = 0;
 			PMData->Heartbeat.Flags.Laser = 0;
-			waitTime[TIME_LASER] = 0.00;
-			Console::WriteLine("Laser OK");
+			//Console::WriteLine("HB Laser: " + PMData->Heartbeat.Flags.Laser);
 		}
 		else {
-			waitTime[TIME_LASER] += 25;
-			// No response for CRITICAL PROCESS - Kill Program
-			if (waitTime[TIME_LASER] > TIMEOUT) {
-				Console::WriteLine("Laser NOT OK: CRITICAL SHUTDOWN");
+			if (LaserCounter > TIMEOUT) {
+				Console::WriteLine("LASER NOT OK: CRITICAL SHUTDOWN");
 				PMData->Shutdown.Status = 0xFF;
-				//break;
-			}
-		}
-		
-		//////////////////////Vehicle Control//////////////////////////////
-		// Heartbeats: VC CRITICAL
-		if (PMData->Heartbeat.Flags.VehicleControl == 1) {
-			PMData->Heartbeat.Flags.VehicleControl = 0;
-			waitTime[TIME_VC] = 0.00;
-		}
-		else {
-			waitTime[TIME_VC] += 25;
-			if (waitTime[TIME_VC] > TIMEOUT) {
-				PMData->Shutdown.Status = 0xFF;
-				Console::WriteLine("VC NOT OK: CRITICAL SHUTDOWN");
 				break;
 			}
+			else {
+				waitTime[WAIT_LASER]++;
+			}
+
+
 		}
-		
+
 
 		///////////////////////////DISPLAY///////////////////////////////////
 		// Heartbeats: Display NONCRITICAL
 		if (PMData->Heartbeat.Flags.Display == 1) {
+			DisplayCounter = 0;
 			PMData->Heartbeat.Flags.Display = 0;
-			waitTime[TIME_DISP] = 0.00;
 		}
 		else {
-			waitTime[TIME_DISP] += 25;
-			if (waitTime[TIME_DISP] > TIMEOUT) {
+			if (DisplayCounter > TIMEOUT) {
 				Console::WriteLine("Display NOT OK: RESTARTING");
 				StartProcesses();
-				waitTime[TIME_DISP] = 0.00;
 			}
+			else {
+				waitTime[WAIT_DISPLAY]++;
+			}
+
+		}
+
+
+		//////////////////////Vehicle Control//////////////////////////////
+		// Heartbeats: VC CRITICAL
+		if (PMData->Heartbeat.Flags.VehicleControl == 1) {
+			VehicleCounter = 0;
+			PMData->Heartbeat.Flags.VehicleControl = 0;
+		}
+		else {
+			if (VehicleCounter > TIMEOUT) {
+				Console::WriteLine("VC NOT OK : CRITICAL SHUTDOWN");
+				PMData->Shutdown.Status = 0xFF;
+				break;
+			}
+			else {
+				waitTime[WAIT_VEHICLE]++;
+			}
+
 		}
 
 
 		///////////////////////////GPS///////////////////////////////////////
 		// Heartbeats: GPS NONCRITICAL
 		if (PMData->Heartbeat.Flags.GPS == 1) {
+			GPSCounter = 0;
 			PMData->Heartbeat.Flags.GPS = 0;
-			waitTime[TIME_GPS] = 0.00;
+			//Console::WriteLine("HB GPS: " + PMData->Heartbeat.Flags.GPS);
 		}
 		else {
-			waitTime[TIME_GPS] += 25;
-			if (waitTime[TIME_GPS] > TIMEOUT) {
+			if (GPSCounter > TIMEOUT) {
 				Console::WriteLine("GPS NOT OK: RESTARTING");
 				StartProcesses();
-				waitTime[TIME_GPS] = 0.00;
 			}
+			else {
+				waitTime[WAIT_GPS]++;
+			}
+
 		}
-		
+
 
 		///////////////////////////Camera///////////////////////////////////////
 		// Heartbeats: Camera CRITICAL
 		if (PMData->Heartbeat.Flags.Camera == 1) {
+			CameraCounter = 0;
 			PMData->Heartbeat.Flags.Camera = 0;
-			waitTime[TIME_CAMERA] = 0.00;
 		}
 		else {
-			waitTime[TIME_CAMERA] += 25;
-			if (waitTime[TIME_CAMERA] > TIMEOUT) {
-				Console::WriteLine("CAMERA NOT OK: CRITICAL SHUTDOWN");
-				PMData->Shutdown.Status = 0xFF;
-				break;
+			// checks if wait time has elapsed
+			if (CameraCounter > TIMEOUT) {
+				Console::WriteLine("CAMERA NOT OK: RESTARTING");
+				StartProcesses();
 			}
+			else {
+				waitTime[WAIT_CAMERA]++;
+			}
+
 		}
 
-		Sleep(50);
-		
+		Thread::Sleep(50);
+
 	}
-	
-	//shutdown after main loop exits
+
 	PMData->Shutdown.Status = 0xFF;
 
 	return 0;
 }
-
 
 //Is process running function
 bool IsProcessRunning(const char* processName)
@@ -224,7 +233,7 @@ bool IsProcessRunning(const char* processName)
 
 	if (Process32First(snapshot, &entry))
 		while (Process32Next(snapshot, &entry))
-			if (!_stricmp((const char *)entry.szExeFile, processName))
+			if (!_stricmp((const char*)entry.szExeFile, processName))
 				exists = true;
 
 	CloseHandle(snapshot);
@@ -239,7 +248,7 @@ void StartProcesses()
 
 	for (int i = 0; i < NUM_UNITS; i++)
 	{
-		if (!IsProcessRunning((const char *)Units[i]))
+		if (!IsProcessRunning((const char*)Units[i]))
 		{
 			ZeroMemory(&s[i], sizeof(s[i]));
 			s[i].cb = sizeof(s[i]);
@@ -255,4 +264,5 @@ void StartProcesses()
 		}
 	}
 }
+
 

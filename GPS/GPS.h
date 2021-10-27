@@ -1,20 +1,30 @@
-#pragma once
+
 #include <UGV_module.h>
 #include <smstructs.h>
 #using <System.dll>
 
+using namespace System;
+using namespace System::IO::Ports;
+
+
 #define CRC32_POLYNOMIAL 0xEDB88320L
 
-unsigned long CRC32Value(int i);
-unsigned long CalculateBlockCRC32(unsigned long ulCount, unsigned char* ucBuffer);
+#pragma pack(4)
 
-struct GPSContents {
-	unsigned int Header;
+struct GPSDataStruct {
+	unsigned int Header = 0xaa44121c;
+	unsigned char DiscardLot1[40];
 	double Northing;
 	double Easting;
 	double Height;
+	unsigned char DiscardLot2[40];
 	unsigned int CRC;
 };
+unsigned long CRC32Value(int i);
+unsigned long CalculateBlockCRC32(unsigned long ulCount, /* Number of bytes in the data block */
+	unsigned char* ucBuffer);
+
+
 
 ref class GPS : public UGV_module
 {
@@ -29,22 +39,28 @@ public:
 	int setHeartbeat(bool heartbeat) override;
 	~GPS();
 
-protected:
-	
-	int PortNumber;				//Server PortNum
-	TcpClient^ Client;
-	NetworkStream^ Stream;		//handle for NetworkStream obj
-	String^ PortName;
-	array<unsigned char>^ SendData;
-	array<unsigned char>^ ReadData;
-	array<unsigned char>^ RecvData;
-	unsigned int Checksum;
-	int Start;
-	double east;
-	double north;
-	double high;
 
-	ProcessManagement* PMData;	// PM Data Pointer
-	SM_GPS* GPSData; // GPS Data Pointer
+protected:
+	ProcessManagement* PMData;
+	SM_GPS* GPSData;
+	double TimeStamp;
+	__int64 Frequency;
+	__int64 Counter;
+	int Shutdown;
+	unsigned char* startBytePtr;
+	unsigned char* BytePtr = nullptr;
+	int Start;
+	double tempNorthing;
+	double tempEasting;
+	double tempHeight;
+	SerialPort^ Port = nullptr;
+	String^ PortName = nullptr;
+	array<unsigned char>^ SendData;
+
+	//NetworkStream^ Stream;
+
+
+	// YOUR CODE HERE (ADDITIONAL MEMBER VARIABLES THAT YOU MAY WANT TO ADD)
+
 };
 

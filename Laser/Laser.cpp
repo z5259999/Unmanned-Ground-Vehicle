@@ -1,17 +1,11 @@
-
-// Credited Authors: Jay Katupitiya, James Stevens
-// Codebase derived from week 4 Pre-recorded lecture_3 [Accessed from 4 Oct 2021] 
-// Available: https://moodle.telt.unsw.edu.au/mod/resource/view.php?id=4164111
-
-#include "Laser.h"
 #using <System.dll>
+#include "laser.h"
 #include <Windows.h>
 #include <conio.h>
 #include <math.h>
 
 #include <SMObject.h>
 #include <smstructs.h>
-
 
 using namespace System;
 using namespace System::Diagnostics;
@@ -20,139 +14,132 @@ using namespace System::Net::Sockets;
 using namespace System::Net;
 using namespace System::Text;
 
+
 int Laser::connect(String^ hostName, int portNumber)
 {
+	AskScan = gcnew String("sRN LMDscandata");
+	StudID = gcnew String("5259999\n");
+
 	Client = gcnew TcpClient(hostName, portNumber);
+
 	Client->NoDelay = true;
 	Client->ReceiveTimeout = 500;
 	Client->SendTimeout = 500;
 	Client->ReceiveBufferSize = 1024;
 	Client->SendBufferSize = 1024;
+
 	SendData = gcnew array<unsigned char>(16);
 	ReadData = gcnew array<unsigned char>(2500);
+
 	Stream = Client->GetStream();
-	zID = gcnew String("5259999\n");
-	ScanReq = gcnew String("sRN LMDscandata");
-	SendData = System::Text::Encoding::ASCII->GetBytes(zID);
+
+	SendData = System::Text::Encoding::ASCII->GetBytes(StudID);
+
+
 	Stream->Write(SendData, 0, SendData->Length);
+
 	System::Threading::Thread::Sleep(10);
+
 	Stream->Read(ReadData, 0, ReadData->Length);
 	ResponseData = System::Text::Encoding::ASCII->GetString(ReadData);
 	Console::WriteLine(ResponseData);
-	SendData = System::Text::Encoding::ASCII->GetBytes(ScanReq);
+
+	SendData = System::Text::Encoding::ASCII->GetBytes(AskScan);
+
+
 	return 1;
 }
-
-int Laser::setupSharedMemory() {
-
-	// Create the SM Objects
+int Laser::setupSharedMemory()
+{
 	ProcessManagementData = new SMObject(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
-	SensorData = new SMObject(_TEXT("Laser"), sizeof(SM_Laser));
-	
-	// Attempt to access PM
-	ProcessManagementData->SMAccess();
-	if (ProcessManagementData->SMAccessError) {
-		Console::WriteLine("ERROR: PM SM Object not accessed");
-	}
-	// Attempt to access Laser
-	SensorData->SMAccess();
-	if (SensorData->SMAccessError) {
-		Console::WriteLine("ERROR: Laser SM Object not accessed");
-	}
+	SensorData = new SMObject(_TEXT("LaserSMObject"), sizeof(SM_Laser));
 
-	// Point to shared memory
+	ProcessManagementData->SMAccess();
+	SensorData->SMAccess();
 	PMData = (ProcessManagement*)ProcessManagementData->pData;
 	LaserData = (SM_Laser*)SensorData->pData;
-	
-	// Set flag to 0 by default, ensure it isn't shut down
 	PMData->Shutdown.Flags.Laser = 0;
 
 	return 1;
-
 }
-
 int Laser::getData()
 {
+	Stream->WriteByte(0x02);
+	Stream->Write(SendData, 0, SendData->Length);
+	Stream->WriteByte(0x03);
 
+	System::Threading::Thread::Sleep(120);
 
-	// YOUR CODE HERE
+	Stream->Read(ReadData, 0, ReadData->Length);
+
+	ResponseData = System::Text::Encoding::ASCII->GetString(ReadData);
+
 	return 1;
 }
 int Laser::checkData()
 {
-	Stream->WriteByte(0x02);
-	// Write command asking for data
-	Stream->Write(SendData, 0, SendData->Length);
-	Stream->WriteByte(0x03);
-	// Wait for the server to prepare the data, 1 ms would be sufficient, but used 10 ms
-	System::Threading::Thread::Sleep(10);
-	// Read the incoming data
-	Stream->Read(ReadData, 0, ReadData->Length);
-	// Convert incoming data from an array of unsigned char bytes to an ASCII string
-	ResponseData = System::Text::Encoding::ASCII->GetString(ReadData);
-	//Remove ":" from the string
-	ResponseData = ResponseData->Replace(":", "");
+	array<String^>^ LaserData = ResponseData->Split(' ');
+	Console::WriteLine(LaserData[1]);
 
-	StringArray = ResponseData->Split(' ');
-	StartAngle = System::Convert::ToInt32(StringArray[23], 16);
-	Resolution = System::Convert::ToInt32(StringArray[24], 16) / 10000.0;
-	NumRanges = System::Convert::ToInt32(StringArray[25], 16);
+	if (LaserData[1] == "LMDscandata") {
 
-	Range = gcnew array<double>(NumRanges);
-	RangeX = gcnew array<double>(NumRanges);
-	RangeY = gcnew array<double>(NumRanges);
-	for (int i = 0; i < NumRanges; i++)
-	{
-		Range[i] = System::Convert::ToInt32(StringArray[26 + i], 16);
-		RangeX[i] = Range[i] * Math::Sin(i * Resolution * Math::PI / 180.0);
-		RangeY[i] = -Range[i] * Math::Cos(i * Resolution * Math::PI / 180.0);
+		Console::WriteLine(LaserData[20]);
+		double StartAngle = System::Convert::ToInt32(LaserData[23], 16);
+		double AngularStep = System::Convert::ToInt32(LaserData[24], 16) / 10000.0;
+		double NumberData = System::Convert::ToInt32(LaserData[25], 16);
 
-		// Print the received string on the screen
-		Console::WriteLine("The angle is: {0:F}", i * Resolution);
-		Console::WriteLine("The X coordinate is: {0:F}", RangeX[i]);
-		Console::WriteLine("The Y coordinate is: {0:F}", RangeY[i]);
-	}
+		Console::WriteLine("The start angle: {0, 0:F0}", StartAngle);
+		Console::WriteLine("The step size: {0, 0:F3}", AngularStep);
+		Console::WriteLine("The number of data  points: {0, 0:F0}", NumberData);
 
-	return 1;
-}
-int Laser::sendDataToSharedMemory() {
 
-	for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
-		LaserData->x[i] = RangeX[i];
-		LaserData->y[i] = RangeY[i];
-		Console::WriteLine("x:{0, 0:F4} y:{1, 0:F4}", RangeX[i], RangeY[i]);
-	}
+		XRange = gcnew array<double>(NumberData);
+		YRange = gcnew array<double>(NumberData);
+		double temp, angle;
 
-	return 1;
+		for (int i = 0; i < NumberData; i++) {
+			temp = System::Convert::ToInt32(LaserData[26 + i], 16);
+			XRange[i] = temp * Math::Sin(i * AngularStep * Math::PI / 180);
+			YRange[i] = temp * Math::Cos(i * AngularStep * Math::PI / 180);
 
-}
-
-bool Laser::getShutdownFlag() {
-
-	ProcessManagement* PMData = (ProcessManagement*)ProcessManagementData->pData;
-	return PMData->Shutdown.Flags.Laser;
-
-}
-
-int Laser::setHeartbeat(bool heartbeat) {
-
-	ProcessManagement* PMData = (ProcessManagement*)ProcessManagementData->pData;
-	
-	// Heartbeats: Laser CRITICAL
-	// Flip the flag from 0 to 1 - Communicates with ProcessManagement.cpp
-	if (PMData->Heartbeat.Flags.Laser == 0) {
-		PMData->Heartbeat.Flags.Laser = 1;
-		PMData->ModCounters[TIME_LASER] = 0.00;
-	}
-	// No response for CRITICAL PROCESS - Kill Program
-	else {
-		PMData->ModCounters[TIME_LASER] += 25;
-		if (PMData->ModCounters[TIME_LASER] > TIMEOUT) {
-			PMData->Shutdown.Status = 0xFF;
 		}
 	}
 
-	//Threading time
+	return 1;
+}
+int Laser::sendDataToSharedMemory()
+{
+	for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
+		LaserData->x[i] = XRange[i];
+		LaserData->y[i] = YRange[i];
+		Console::WriteLine("x:{0, 0:F4} y:{1, 0:F4}", XRange[i], YRange[i]);
+	}
+
+	return 1;
+}
+bool Laser::getShutdownFlag()
+{
+	ProcessManagement* PMData = (ProcessManagement*)ProcessManagementData->pData;
+	return PMData->Shutdown.Flags.Laser;
+}
+int Laser::setHeartbeat(bool heartbeat)
+{
+	double WaitAndSee = 0.00;
+
+	if (PMData->Heartbeat.Flags.Laser == 0) {
+		PMData->Heartbeat.Flags.Laser = 1;
+
+		//Debugging
+		//Console::WriteLine("HB Laser: " + PMData->Heartbeat.Flags.Laser);
+
+		WaitAndSee = 0.00;
+	}
+	else {
+		WaitAndSee += 25;
+		if (WaitAndSee > TIMEOUT) {
+			PMData->Shutdown.Status = 0xFF;
+		}
+	}
 	Thread::Sleep(25);
 
 	if (PMData->Shutdown.Status) {
@@ -160,14 +147,11 @@ int Laser::setHeartbeat(bool heartbeat) {
 	}
 
 	return 1;
-
 }
-
-Laser::~Laser() {
-
+Laser::~Laser()
+{
 	Stream->Close();
 	Client->Close();
 	delete ProcessManagementData;
 	delete SensorData;
-
 }

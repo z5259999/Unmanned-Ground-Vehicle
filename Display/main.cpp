@@ -1,3 +1,12 @@
+
+#using <System.dll>
+#include <conio.h>
+
+//paste all the SMObject into the source files folder for each of the sections
+#include <SMObject.h>
+#include <smstructs.h>	
+
+
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
@@ -5,12 +14,7 @@
 #include <sstream>
 #include <map>
 
-#include "SMStructs.h"
-#include "SMFcn.h"
-#include <smstructs.h>
-#include "SMObject.h"
-
-#ifdef _APPLE_
+#ifdef __APPLE__
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
 #include <GLUT/glut.h>
@@ -42,12 +46,12 @@
 #include "Messages.hpp"
 #include "HUD.hpp"
 
+#define DEGTORAD (3.141592765 / 180.0)
+
+
 void display();
 void reshape(int width, int height);
 void idle();
-
-void laserDraw();
-void GPSDraw();
 
 void keydown(unsigned char key, int x, int y);
 void keyup(unsigned char key, int x, int y);
@@ -57,12 +61,15 @@ void special_keyup(int keycode, int x, int y);
 void mouse(int button, int state, int x, int y);
 void dragged(int x, int y);
 void motion(int x, int y);
+void drawLaser();
+void drawGPS();
 
 using namespace std;
 using namespace scos;
 using namespace System;
 using namespace System::Diagnostics;
 using namespace System::Threading;
+
 
 // Used to store the previous mouse location so we
 //   can calculate relative mouse movement.
@@ -74,12 +81,10 @@ Vehicle* vehicle = NULL;
 double speed = 0;
 double steering = 0;
 
-//Shared memory
 SMObject PMObj(TEXT("ProcessManagement"), sizeof(ProcessManagement));
-SMObject LaserObj(TEXT("LaserSMObject"), sizeof(SM_Laser));
-SMObject GPSObj(TEXT("GPSSMObject"), sizeof(SM_GPS));
-SMObject VCObj(TEXT("VCObject"), sizeof(SM_VehicleControl));
-
+SMObject LaserSMObject(TEXT("LaserSMObject"), sizeof(SM_Laser));
+SMObject GPSSMObject(TEXT("GPSSMObject"), sizeof(SM_GPS));
+SMObject VehicleSMObject(TEXT("VehicleSMObject"), sizeof(SM_VehicleControl));
 ProcessManagement* PMData = nullptr;
 SM_Laser* LaserData = nullptr;
 SM_GPS* GPSData = nullptr;
@@ -88,27 +93,29 @@ SM_VehicleControl* VehicleData = nullptr;
 //int _tmain(int argc, _TCHAR* argv[]) {
 int main(int argc, char** argv) {
 
-	
-	//SM Seeking access 
-	PMObj.SMAccess();
-	if (PMObj.SMAccessError) {
-		Console::WriteLine("Error - PM shared memory could not be accessed.");
-	}
-
-	LaserObj.SMAccess();
-	if (LaserObj.SMAccessError) {
-		Console::WriteLine("Error - Laser shared memory could not be accessed.");
-	}
-
-	PMData = (ProcessManagement*)PMObj.pData;
-	LaserData = (SM_Laser*)LaserObj.pData;
-	GPSData = (SM_GPS*)GPSObj.pData;
-	VehicleData = (SM_VehicleControl*)VCObj.pData;
-
-	PMData->Shutdown.Flags.Display = 0;
-
 	const int WINDOW_WIDTH = 800;
 	const int WINDOW_HEIGHT = 600;
+	//Console::WriteLine("set up shared memory");
+	// 
+	//PMObj.SMCreate();
+	//LaserSMObject.SMCreate();
+	//GPSSMObject.SMCreate();
+	//VehicleSMObject.SMCreate();
+
+	PMObj.SMAccess();
+
+	LaserSMObject.SMAccess();
+
+	GPSSMObject.SMAccess();
+
+	VehicleSMObject.SMAccess();
+
+	PMData = (ProcessManagement*)PMObj.pData;
+	LaserData = (SM_Laser*)LaserSMObject.pData;
+	GPSData = (SM_GPS*)GPSSMObject.pData;
+	VehicleData = (SM_VehicleControl*)VehicleSMObject.pData;
+
+	PMData->Shutdown.Flags.Display = 0;
 
 	glutInit(&argc, (char**)(argv));
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
@@ -138,11 +145,10 @@ int main(int argc, char** argv) {
 	//   with the name of the class you want to show as the current 
 	//   custom vehicle.
 	// -------------------------------------------------------------------------
-
 	vehicle = new MyVehicle();
+
+
 	glutMainLoop();
-
-
 
 	if (vehicle != NULL) {
 		delete vehicle;
@@ -153,9 +159,11 @@ int main(int argc, char** argv) {
 
 
 void display() {
+
 	// -------------------------------------------------------------------------
 	//  This method is the main draw routine. 
 	// -------------------------------------------------------------------------
+	Console::WriteLine("yo doggy");
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -180,15 +188,75 @@ void display() {
 
 	}
 
-	laserDraw();
-	GPSDraw();
-
+	drawLaser();
+	drawGPS();
 
 	// draw HUD
 	HUD::Draw();
 
 	glutSwapBuffers();
 };
+
+void drawLaser() {
+	static GLUquadric* laserQuad = gluNewQuadric();
+	double x = 0, y = vehicle->getY() + 0.03, z = 0;
+	glPushMatrix();
+	for (int i = 1; i < STANDARD_LASER_LENGTH; i++) {
+		glColor3f(0.3, 0.7, 0.8);
+		glTranslatef(LaserData->x[i] / 1000 - x, y, LaserData->y[i] / 1000 - z);
+		x = LaserData->x[i] / 1000;
+		z = LaserData->y[i] / 1000;
+		y = 0;
+		Console::WriteLine(" {0, 4:F3}  {1, 4:F3}  {2, 4:F3} ", LaserData->x[i] / 1000 + x, 0.3, LaserData->y[i] / 1000 + y);
+		glPushMatrix();
+		glRotatef(-90, 1, 0, 0);
+		gluCylinder(laserQuad, 0.02, 0.02, 1, 12, 1);
+		glPopMatrix();
+	}
+
+	glPopMatrix();
+	glEnd();
+
+}
+
+void drawGPS() {
+
+	Camera::get()->switchTo2DDrawing();
+	int winWidthOff = (Camera::get()->getWindowWidth() - 800) * .5;
+	if (winWidthOff < 0)
+		winWidthOff = 0;
+
+	glColor3f(0.3, 0.7, 0.4);
+	double x = 130 + winWidthOff;
+	double y = 600;
+	char GPSLabel[250];
+	sprintf(GPSLabel, "Northing: %.4f  Easting: %.4f  Height: %.4f", GPSData->northing,
+		GPSData->easting, GPSData->height);
+
+	double r = 4;
+
+	glPushMatrix();
+	double r1 = r;
+	double r2 = r * 1.05;
+
+	const double centerR = -90;
+	const double startR = centerR - 50;
+	const double endR = centerR + 50;
+
+	glTranslatef(x, y, 0);
+	glDisable(GL_LIGHTING);
+
+	y = sin((startR)*DEGTORAD);
+	// text label
+	//renderString(label, strlen(label) * 10 * -.25, -r1 + 20, GLUT_BITMAP_HELVETICA_10);
+	HUD::RenderString(GPSLabel, strlen(GPSLabel) * 10 * -.25, (r1 - 20) * y - 20, GLUT_BITMAP_HELVETICA_18);
+
+	glPopMatrix();
+
+	Camera::get()->switchTo3DDrawing();
+
+}
+
 
 void reshape(int width, int height) {
 
@@ -217,15 +285,18 @@ double getTime()
 #endif
 }
 
+// put code in here
 void idle() {
+
 
 	double WaitAndSee = 0.00;
 
-	//ProcessManagement* PMData = (ProcessManagement*)PMObjPtr->pData;
+	if (PMData->Heartbeat.Flags.Display == 0) {
+		PMData->Heartbeat.Flags.Display = 1;
 
-	if (PMData->Heartbeat.Flags.Display == 0) { //Check that PM has set the flag down 
-		PMData->Heartbeat.Flags.Display = 1; //set the flag up 
-		//Reset WaitAndSeeTime
+		//Debugging
+		//Console::WriteLine("HB Display: " + PMData->Heartbeat.Flags.Display);
+
 		WaitAndSee = 0.00;
 	}
 	else {
@@ -234,10 +305,11 @@ void idle() {
 			PMData->Shutdown.Status = 0xFF;
 		}
 	}
-	if (PMData->Shutdown.Status == 0xFF)
-		exit(0);
-
 	Thread::Sleep(25);
+
+	if (PMData->Shutdown.Status) {
+		exit(0);
+	}
 
 	if (KeyManager::get()->isAsciiKeyPressed('a')) {
 		Camera::get()->strafeLeft();
@@ -276,6 +348,7 @@ void idle() {
 
 	if (KeyManager::get()->isSpecialKeyPressed(GLUT_KEY_UP)) {
 		speed = Vehicle::MAX_FORWARD_SPEED_MPS;
+
 	}
 
 	if (KeyManager::get()->isSpecialKeyPressed(GLUT_KEY_DOWN)) {
@@ -366,43 +439,4 @@ void motion(int x, int y) {
 	prev_mouse_y = y;
 };
 
-void laserDraw()
-{
 
-	vehicle->positionInGL();
-	glTranslated(0.5, 0, 0);
-
-	glPushMatrix();
-
-	glBegin(GL_LINES);
-	for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
-		glColor3f(1, 1, 1);
-		glLineWidth(2);
-		glVertex3f(LaserData->x[i]/1000, 0.0f, -LaserData->y[i] / 1000);
-		glVertex3f(LaserData->x[i] / 1000, 1.0f, -LaserData->y[i] / 1000);
-	}
-	glEnd();
-	
-
-	glPopMatrix();
-
-}
-
-void GPSDraw()
-{
-	Camera::get()->switchTo2DDrawing();
-	int widthOffset = (Camera::get()->getWindowWidth() - 800) * 0.5;
-	if (widthOffset < 0) {
-		widthOffset = 0;
-	}
-
-	char buffer[80];
-	if (vehicle) {
-		glColor3f(1, 1, 1);
-		sprintf(buffer, "Northing % .4f  Easting : % .4f  Height : % .4f", GPSData->northing,
-			GPSData->easting, GPSData->height);
-		HUD::RenderString(buffer, 0, 20, GLUT_BITMAP_HELVETICA_12);
-	}
-
-	Camera::get()->switchTo3DDrawing();
-}

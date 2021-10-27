@@ -1,152 +1,139 @@
-
 #include "GPS.h"
-#include "SMStructs.h"
-#include <SMObject.h>
-
-#include <iostream>
+#using <System.dll>
+#include <Windows.h>
 #include <conio.h>
+#include <math.h>
 
+#include <SMObject.h>
+#include <smstructs.h>
+
+using namespace System;
+using namespace System::IO::Ports;
 using namespace System::Diagnostics;
 using namespace System::Threading;
-using namespace System;
 using namespace System::Net::Sockets;
 using namespace System::Net;
 using namespace System::Text;
 
+struct GPSDataStruct;
+
 int GPS::connect(String^ hostName, int portNumber)
 {
 
-	// Array of chars for client reading/writing
 	SendData = gcnew array<unsigned char>(16);
-	RecvData = gcnew array<unsigned char>(224);
+	ReadData = gcnew array<unsigned char>(224);
 
-	// Create Client
 	Client = gcnew TcpClient(hostName, portNumber);
-
-	// Configure Client (Client default 'Settings')
+	// Configure connection
 	Client->NoDelay = true;
-	Client->ReceiveTimeout = 500;
-	Client->SendTimeout = 500;
-	Client->SendBufferSize = 1024;
+	Client->ReceiveTimeout = 500;//ms
+	Client->SendTimeout = 500;//ms
 	Client->ReceiveBufferSize = 1024;
+	Client->SendBufferSize = 1024;
 
-	// Check Connection Status
-	if (Client->Connected)
-	{
-		Console::WriteLine("Connected to GPS");
-	}
 
-	// Get the current datastream for reading/writing
 	Stream = Client->GetStream();
+	Console::Write(Stream->DataAvailable);
 
 	return 1;
 }
 int GPS::setupSharedMemory()
 {
-	// Create the SM Objects
 	ProcessManagementData = new SMObject(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
-	SensorData = new SMObject(_TEXT("GPS"), sizeof(SM_GPS));
-
-	// Attempt to access PM
+	SensorData = new SMObject(_TEXT("GPSSMObject"), sizeof(SM_GPS));
+	//ProcessManagementData->SMCreate();
+	//SensorData->SMCreate();
 	ProcessManagementData->SMAccess();
-	if (ProcessManagementData->SMAccessError) {
-		Console::WriteLine("ERROR: PM SM Object not accessed");
-	}
-	// Attempt to access GPS
 	SensorData->SMAccess();
-	if (SensorData->SMAccessError) {
-		Console::WriteLine("ERROR: GPS SM Object not accessed");
-	}
-
-	// Point to shared memory
 	PMData = (ProcessManagement*)ProcessManagementData->pData;
 	GPSData = (SM_GPS*)SensorData->pData;
-
-	// Set flag to 0 by default, ensure it isn't shut down
 	PMData->Shutdown.Flags.GPS = 0;
-
 	return 1;
-
 }
 int GPS::getData()
 {
-	GPSContents GNSS;
+	//GPSDataStruct* Novatel = new GPSDataStruct;
+	GPSDataStruct Novatel;
+	BytePtr = (unsigned char*)&Novatel;
+	startBytePtr = BytePtr;
+	int debugging = 1;
 
-	unsigned char* BytePtr = nullptr;
-	BytePtr = (unsigned char*)&GNSS;
-
-	unsigned char* StartBlock = nullptr;
-	StartBlock = (unsigned char*)&GNSS;
-
-	int debugFlag = 1;
-
+	//Stream->DataAvailable <- put this back in for main thing
 	if (Stream->DataAvailable) {
-		
-		Stream->Read(RecvData, 0, RecvData->Length);
+		Stream->Read(ReadData, 0, ReadData->Length);
+		//
 		Start = checkData();
-		for (int i = Start; i < Start + sizeof(GNSS); i++) {
-			*(BytePtr++) = RecvData[i];
+		for (int i = Start; i < Start + sizeof(Novatel); i++) {
+			*(BytePtr++) = ReadData[i];
+
 		}
 
-		unsigned long temp = CalculateBlockCRC32(sizeof(GPSContents) - 4, StartBlock);
-		if (GNSS.CRC == temp) {
-			east = GNSS.Easting;
-			north = GNSS.Northing;
-			high = GNSS.Height;
-
+		unsigned long temp = CalculateBlockCRC32(sizeof(GPSDataStruct) - 4, startBytePtr);
+		if (Novatel.CRC == temp) {
+			tempEasting = Novatel.Easting;
+			tempNorthing = Novatel.Northing;
+			tempHeight = Novatel.Height;
+			Console::WriteLine("Northing: {0,10:F3}  Easting: {1,10:F3}  Height: {2,10:F3} CRC: {3, 10:X}", Novatel.Northing,
+				Novatel.Easting, Novatel.Height, temp);
 			sendDataToSharedMemory();
-			Console::WriteLine("Northing: {0,10:F3}", GPSData->northing);
-			Console::WriteLine("Easting: {1,10:F3}", GPSData->easting);
-			Console::WriteLine("Height: {2,10:F3}", GPSData->height);
+
+
 		}
-
 	}
-
+	// YOUR CODE HERE
 	return 1;
 }
+
 int GPS::checkData()
 {
+
 	unsigned int Header = 0;
 	int i = 0;
 	unsigned char Data;
+
 	do
 	{
-		Data = RecvData[i++];
-		Header = ((Header << 8) | Data); //shift header by 8 bits
+		Data = ReadData[i++];
+		Console::WriteLine("Data Output: {0,5:F3}", Data);
+		Header = ((Header << 8) | Data);
 	} while (Header != 0xaa44121c);
-	Start = i - 4;
 
-	return Start;
+	return i - 4;
 }
+
 int GPS::sendDataToSharedMemory()
 {
-	GPSData->easting = east;
-	GPSData->northing = north;
-	GPSData->height = high;
+	GPSData->easting = tempEasting;
+	GPSData->northing = tempNorthing;
+	GPSData->height = tempHeight;
+
 	return 1;
 }
+
 bool GPS::getShutdownFlag()
 {
 	ProcessManagement* PMData = (ProcessManagement*)ProcessManagementData->pData;
 	return PMData->Shutdown.Flags.GPS;
-
 }
+
 int GPS::setHeartbeat(bool heartbeat)
 {
-	ProcessManagement* PMData = (ProcessManagement*)ProcessManagementData->pData;
-	double WaitTimeG = 0.00;
+	double WaitAndSee = 0.00;
 
 	if (PMData->Heartbeat.Flags.GPS == 0) {
-		PMData->Heartbeat.Flags.GPS == 1;
-		WaitTimeG = 0.00;
+		PMData->Heartbeat.Flags.GPS = 1;
+
+		//Debugging
+		//Console::WriteLine("HB GPS: " + PMData->Heartbeat.Flags.GPS);
+
+		WaitAndSee = 0.00;
 	}
 	else {
-		WaitTimeG += 25;
-		if (WaitTimeG > TIMEOUT) {
+		WaitAndSee += 25;
+		if (WaitAndSee > TIMEOUT) {
 			PMData->Shutdown.Status = 0xFF;
 		}
 	}
-
 	Thread::Sleep(25);
 
 	if (PMData->Shutdown.Status) {
@@ -155,12 +142,14 @@ int GPS::setHeartbeat(bool heartbeat)
 
 	return 1;
 }
+
 GPS::~GPS()
 {
 	Stream->Close();
 	Client->Close();
 	delete ProcessManagementData;
 	delete SensorData;
+
 }
 
 

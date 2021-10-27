@@ -1,41 +1,35 @@
 #using <System.dll>
 #include <Windows.h>
-#include <tchar.h>
-#include <TlHelp32.h>
-#include <stdio.h>
-#include <iostream>
 #include <conio.h>
+#include "VehicleControl.h" //include from the same directory you are in
 
-#include "SMStructs.h"
-#include "SMObject.h"
-#include "VehicleControl.h"
+#include <SMObject.h>
+#include <smstructs.h>
 
+using namespace System;
 using namespace System::Diagnostics;
 using namespace System::Threading;
-using namespace System;
-using namespace System::Net::Sockets;
-using namespace Net;
-using namespace Sockets;
-using namespace System::Net;
-using namespace System::Text;
 
-
-int main() 
+int main()
 {
-	
-	VehicleControl VCModule;
-	VCModule.setupSharedMemory();
-	int PortNumber = 25000;
-	String^ hostName = "192.168.1.200";
+	VehicleControl VehicleClass;
 
-	VCModule.connect(hostName, PortNumber);
-	while (!VCModule.getShutdownFlag()) {
-		VCModule.getData();
-		VCModule.sendDataToSharedMemory();
-		VCModule.setHeartbeat(1);
+	//Sleep(100);
+	VehicleClass.setupSharedMemory();
+
+	int PortNumber = 25000;
+	String^ HostName = "192.168.1.200";
+	VehicleClass.connect(HostName, PortNumber);
+
+	while (!VehicleClass.getShutdownFlag()) {
+
+		VehicleClass.getData();
+		VehicleClass.sendDataToSharedMemory();
+		VehicleClass.setHeartbeat(1);
 	}
 
-	VCModule.~VehicleControl();
+	VehicleClass.~VehicleControl();
+
 
 	return 0;
 }
