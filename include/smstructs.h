@@ -42,10 +42,10 @@ struct SM_GPS
 struct UnitFlags
 {
 	unsigned char	ProcessManagement : 1,	//NONCRITICAL
-		Laser : 1,				//NONCRITICAL
+		Laser : 1,				//CRITICAL
 		Display : 1,			//NONCRITICAL
-		VehicleControl : 1,		//NONCRITICAL
-		GPS : 1,				//NONCRITICAL
+		VehicleControl : 1,		//CRITICAL
+		GPS : 1,				//CRITICAL
 		Camera : 1,				//NONCRITICAL
 		Garbage : 3;
 };
@@ -61,12 +61,12 @@ struct ProcessManagement
 	ExecFlags Heartbeat;
 	ExecFlags Shutdown;
 	ExecFlags PMHeartbeat;
-	double ModCounter[5];
+
 	long int LifeCounter;
 };
 
-#define NONCRITICALMASK 0xff	//0 011 0000
-#define CRITICALMASK 0x0		//0 100 1111
+#define NONCRITICALMASK 0xff
+#define CRITICALMASK 0x0
 
 #define WAIT_LASER 4
 #define WAIT_VEHICLE 3

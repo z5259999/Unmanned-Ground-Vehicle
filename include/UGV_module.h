@@ -57,13 +57,13 @@ ref class UGV_module
 
 
 	protected:
-		int Error;							// Stores last error code
-		TcpClient^ Client;					// Handle for TCP connection
-		NetworkStream^ Stream;				// Handle for TCP data stream
-		array<unsigned char>^ ReadData;		// Array to store sensor Data
+		int Error;
+		TcpClient^ Client;
+		NetworkStream^ Stream;
+		array<unsigned char>^ ReadData;
 
-		SMObject* ProcessManagementData;	// Filled in setupSharedMemory(). For accessing PM shared Memory
-		SMObject* SensorData;				// Filled in setupSharedMemory(). For storing sensory data to shared Memory
+		SMObject* ProcessManagementData;
+		SMObject* SensorData;
 
 };
 
