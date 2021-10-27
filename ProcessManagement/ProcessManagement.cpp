@@ -26,7 +26,7 @@ TCHAR Units[10][20] = //
 {
 	TEXT("LaserMod.exe"),
 	TEXT("VehicleMod.exe"),
-	TEXT("DisplayMod3.exe"),
+	TEXT("DisplayBeanie.exe"),
 	TEXT("GPSMod.exe"),
 	TEXT("CameraMod.exe")
 };
