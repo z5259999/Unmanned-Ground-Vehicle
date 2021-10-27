@@ -39,11 +39,15 @@ int GPS::connect(String^ hostName, int portNumber)
 }
 int GPS::setupSharedMemory()
 {
+	// Create SM Objects
 	ProcessManagementData = new SMObject(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
 	SensorData = new SMObject(_TEXT("GPSSMObject"), sizeof(SM_GPS));
 
+	// Access SMObjects
 	ProcessManagementData->SMAccess();
 	SensorData->SMAccess();
+
+	// Assign Pointers to SMObject data
 	PMData = (ProcessManagement*)ProcessManagementData->pData;
 	GPSData = (SM_GPS*)SensorData->pData;
 	
@@ -52,26 +56,31 @@ int GPS::setupSharedMemory()
 }
 int GPS::getData()
 {
+	// Create class object for GPS data
 	GPSContents GNSS;
 	BytePtr = (unsigned char*)&GNSS;
 	startByteStream = (unsigned char*)&GNSS;
 
+	// Read data, check it by iterating through
 	if (Stream->DataAvailable) {
 		Stream->Read(ReadData, 0, ReadData->Length);
-		//
+		
 		Start = checkData();
 		for (int i = Start; i < Start + sizeof(GNSS); i++) {
 			*(BytePtr++) = ReadData[i];
 
 		}
 
-		unsigned long temp = CalculateBlockCRC32(sizeof(GPSContents) - 4, startByteStream);
-		if (GNSS.CRC == temp) {
+		// Error checking CRC, GPSContents - 4 is int CRC in the struct
+		unsigned long CRCval = CalculateBlockCRC32(sizeof(GPSContents) - 4, startByteStream);
+		if (GNSS.CRC == CRCval) {
 			
+			// If error checking was ok, assign the values to the class object
 			gpsEasting = GNSS.Easting;
 			gpsNorthing = GNSS.Northing;
 			gpsHeight = GNSS.Height;
 			
+			// Check in the console to see if it's good to go
 			Console::WriteLine("Northing: {0,10:F3}  Easting: {1,10:F3}  Height: {2,10:F3}", GNSS.Northing,
 				GNSS.Easting, GNSS.Height);
 			
@@ -85,7 +94,7 @@ int GPS::getData()
 
 int GPS::checkData()
 {
-	// From Week 7 Slides
+	// From Week 7 Slides - Checking Buffer is correct
 	unsigned int Header = 0;
 	int i = 0;
 	unsigned char Data;
@@ -101,6 +110,7 @@ int GPS::checkData()
 
 int GPS::sendDataToSharedMemory()
 {
+	// Assign the received data to the SM
 	GPSData->easting = gpsEasting;
 	GPSData->northing = gpsNorthing;
 	GPSData->height = gpsHeight;
@@ -110,6 +120,7 @@ int GPS::sendDataToSharedMemory()
 
 bool GPS::getShutdownFlag()
 {
+	// Get shutdown flag for main - used for heartbeats and shutting down the solution
 	ProcessManagement* PMData = (ProcessManagement*)ProcessManagementData->pData;
 	return PMData->Shutdown.Flags.GPS;
 }
@@ -118,6 +129,7 @@ int GPS::setHeartbeat(bool heartbeat)
 {
 	double WaitAndSee = 0.00;
 
+	// Toggle the heartbeat between PM and GPS - Constantly flipping to check status
 	if (PMData->Heartbeat.Flags.GPS == 0) {
 		PMData->Heartbeat.Flags.GPS = 1;
 
@@ -143,6 +155,7 @@ int GPS::setHeartbeat(bool heartbeat)
 
 GPS::~GPS()
 {
+	// Not sure if things need to be deleted but I guess it doesn't hurt
 	Stream->Close();
 	Client->Close();
 	delete ProcessManagementData;

@@ -23,6 +23,7 @@ zmq::context_t context(1);
 
 zmq::socket_t subscriber(context, ZMQ_SUB);
 
+// Shared Memory Creation
 SMObject PMObj(TEXT("ProcessManagement"), sizeof(ProcessManagement));
 ProcessManagement* PMData = nullptr;
 
@@ -33,10 +34,11 @@ int main(int argc, char** argv)
 	const int WINDOW_WIDTH = 800;
 	const int WINDOW_HEIGHT = 600;
 
-	//PMObj.SMCreate();
+	// Shared Memory Access and Pointer
 	PMObj.SMAccess();
 	PMData = (ProcessManagement*)PMObj.pData;
 	PMData->Shutdown.Flags.Camera = 0;
+
 	//GL Window setup
 	glutInit(&argc, (char**)(argv));
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);

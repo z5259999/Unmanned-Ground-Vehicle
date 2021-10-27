@@ -7,11 +7,8 @@
 #include <iostream>
 #include <conio.h>
 
-//paste all the SMObject into the source files folder for each of the sections
 #include <SMObject.h>
 #include <smstructs.h>	
-
-
 
 using namespace System;
 using namespace System::Diagnostics;
@@ -37,7 +34,7 @@ TCHAR Units[10][20] = //
 
 int main() {
 
-	// Shared Memory Creation and Access
+	// Shared Memory Creation and Access for PM, LASER, VC, GPS
 
 	//////////////////////////////PM////////////////////////////////////
 	
@@ -106,12 +103,6 @@ int main() {
 
 	StartProcesses();
 
-	int LaserCounter = 0;
-	int DisplayCounter = 0;
-	int GPSCounter = 0;
-	int VehicleCounter = 0;
-	int CameraCounter = 0;
-
 	double waitTime[5] = { 0.00, 0.00, 0.00, 0.00, 0.00 };
 
 	while (!_kbhit()) {
@@ -121,12 +112,13 @@ int main() {
 		///////////////////////////LASER///////////////////////////////////
 		// Heartbeats: Laser CRITICAL
 		if (PMData->Heartbeat.Flags.Laser == 1) {
-			LaserCounter = 0;
+			waitTime[WAIT_LASER] = 0;
 			PMData->Heartbeat.Flags.Laser = 0;
 			//Console::WriteLine("HB Laser: " + PMData->Heartbeat.Flags.Laser);
 		}
 		else {
-			if (LaserCounter > TIMEOUT) {
+			// TIMEOUT! Taking too long to respond
+			if (waitTime[WAIT_LASER] > TIMEOUT) {
 				Console::WriteLine("LASER NOT OK: CRITICAL SHUTDOWN");
 				PMData->Shutdown.Status = 0xFF;
 				break;
@@ -142,11 +134,13 @@ int main() {
 		///////////////////////////DISPLAY///////////////////////////////////
 		// Heartbeats: Display NONCRITICAL
 		if (PMData->Heartbeat.Flags.Display == 1) {
-			DisplayCounter = 0;
+			waitTime[WAIT_DISPLAY] = 0;
 			PMData->Heartbeat.Flags.Display = 0;
+			//Console::WriteLine("HB Display: " + PMData->Heartbeat.Flags.Display);
 		}
 		else {
-			if (DisplayCounter > TIMEOUT) {
+			// TIMEOUT! Taking too long to respond
+			if (waitTime[WAIT_DISPLAY] > TIMEOUT) {
 				Console::WriteLine("Display NOT OK: RESTARTING");
 				StartProcesses();
 			}
@@ -160,11 +154,13 @@ int main() {
 		//////////////////////Vehicle Control//////////////////////////////
 		// Heartbeats: VC CRITICAL
 		if (PMData->Heartbeat.Flags.VehicleControl == 1) {
-			VehicleCounter = 0;
+			waitTime[WAIT_VEHICLE] = 0;
 			PMData->Heartbeat.Flags.VehicleControl = 0;
+			//Console::WriteLine("HB Laser: " + PMData->Heartbeat.Flags.Camera);
 		}
 		else {
-			if (VehicleCounter > TIMEOUT) {
+			// TIMEOUT! Taking too long to respond
+			if (waitTime[WAIT_VEHICLE] > TIMEOUT) {
 				Console::WriteLine("VC NOT OK : CRITICAL SHUTDOWN");
 				PMData->Shutdown.Status = 0xFF;
 				break;
@@ -179,12 +175,13 @@ int main() {
 		///////////////////////////GPS///////////////////////////////////////
 		// Heartbeats: GPS NONCRITICAL
 		if (PMData->Heartbeat.Flags.GPS == 1) {
-			GPSCounter = 0;
+			waitTime[WAIT_GPS] = 0;
 			PMData->Heartbeat.Flags.GPS = 0;
 			//Console::WriteLine("HB GPS: " + PMData->Heartbeat.Flags.GPS);
 		}
 		else {
-			if (GPSCounter > TIMEOUT) {
+			// TIMEOUT! Taking too long to respond
+			if (waitTime[WAIT_GPS] > TIMEOUT) {
 				Console::WriteLine("GPS NOT OK: RESTARTING");
 				StartProcesses();
 			}
@@ -198,12 +195,13 @@ int main() {
 		///////////////////////////Camera///////////////////////////////////////
 		// Heartbeats: Camera CRITICAL
 		if (PMData->Heartbeat.Flags.Camera == 1) {
-			CameraCounter = 0;
+			waitTime[WAIT_CAMERA] = 0;
 			PMData->Heartbeat.Flags.Camera = 0;
+			//Console::WriteLine("HB Camera: " + PMData->Heartbeat.Flags.Camera);
 		}
 		else {
-			// checks if wait time has elapsed
-			if (CameraCounter > TIMEOUT) {
+			// TIMEOUT! Taking too long to respond
+			if (waitTime[WAIT_CAMERA] > TIMEOUT) {
 				Console::WriteLine("CAMERA NOT OK: RESTARTING");
 				StartProcesses();
 			}
@@ -217,6 +215,7 @@ int main() {
 
 	}
 
+	// Shutdown the whole operation
 	PMData->Shutdown.Status = 0xFF;
 
 	return 0;

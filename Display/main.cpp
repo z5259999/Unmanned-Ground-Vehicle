@@ -221,23 +221,28 @@ void drawLaser() {
 
 void drawGPS() {
 
+	// Render text in 2D space (On screen)
 	Camera::get()->switchTo2DDrawing();
 	
+	// Position Finding
 	int winWidthOff = (Camera::get()->getWindowWidth() - 800) * .5;
 	
+	// If the window is too small, print in top left
 	if (winWidthOff < 0) {
 		winWidthOff = 0;
 	}
-		
+	
 	char buffer[80];
 	if (vehicle) {
-		//White Text
+		
+		//Print values in white text on screen in Helvetica
 		glColor3f(1, 1, 1);
 		sprintf(buffer, "Northing: % .4f  Easting: % .4f  Height: % .4f", GPSData->northing,
 			GPSData->easting, GPSData->height);
 		HUD::RenderString(buffer, 0, 20, GLUT_BITMAP_HELVETICA_12);
 	}
 
+	// Finish in 2D rendering, go to 3D space to draw other elements
 	Camera::get()->switchTo3DDrawing();
 
 }

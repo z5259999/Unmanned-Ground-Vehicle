@@ -125,6 +125,7 @@ int VehicleControl::setHeartbeat(bool heartbeat)
 }
 VehicleControl::~VehicleControl()
 {
+	// Not sure if things need to be deleted but I guess it doesn't hurt
 	Stream->Close();
 	Client->Close();
 	delete ProcessManagementData;
