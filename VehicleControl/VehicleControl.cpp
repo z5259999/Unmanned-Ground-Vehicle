@@ -37,7 +37,7 @@ int VehicleControl::connect(String^ hostName, int portNumber)
 
 	Stream->Write(SendData, 0, SendData->Length);
 
-	System::Threading::Thread::Sleep(10);
+	System::Threading::Thread::Sleep(25);
 
 	Stream->Read(ReadData, 0, ReadData->Length);
 	ResponseData = System::Text::Encoding::ASCII->GetString(ReadData);
@@ -73,7 +73,6 @@ int VehicleControl::checkData()
 }
 int VehicleControl::sendDataToSharedMemory()
 {
-
 	SendData = System::Text::Encoding::ASCII->GetBytes(VehicleInput);
 	Stream->WriteByte(0x02);
 	Stream->Write(SendData, 0, SendData->Length);

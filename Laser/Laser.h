@@ -26,6 +26,7 @@ public:
 	bool getShutdownFlag() override;
 	int setHeartbeat(bool heartbeat) override;
 	~Laser();
+
 protected:
 	
 	ProcessManagement* PMData;
@@ -37,21 +38,19 @@ protected:
 	String^ AskScan;
 	String^ StudID;
 	String^ ResponseData;
-	double TimeStamp;
-	__int64 Frequency;
-	__int64 Counter;
-	int Shutdown;
-	
-	// ADD CLIENT AND RECV DATA
+
+	array<String^>^ DataPoints;
 
 	double StartAngle;
-	double AngularStep;
-	double NumberData;
-	bool temp;
+	double Resolution;
+	double NumberRange;
+
 	SMObject* PMObj;
 	SMObject* LaserSMObject;
-	array<double>^ XRange;
-	array<double>^ YRange;
+
+	array<double>^ Range;
+	array<double>^ RangeX;
+	array<double>^ RangeY;
 
 
 

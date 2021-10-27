@@ -28,20 +28,16 @@ public:
 	~VehicleControl();
 
 protected:
-	ProcessManagement* PMData;
-	SM_VehicleControl* VehicleControl;
-	
-	double TimeStamp;
-	__int64 Frequency;
-	__int64 Counter;
-	int Shutdown;
 	
 	array<unsigned char>^ SendData = nullptr;
 	String^ AskScan;
 	String^ StudID;
 	String^ ResponseData;
 	String^ VehicleInput;
-	int flag = 0;
+	bool flag = 0;
+
+	ProcessManagement* PMData;
+	SM_VehicleControl* VehicleControl;
 
 
 };

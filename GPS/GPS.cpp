@@ -15,7 +15,7 @@ using namespace System::Net::Sockets;
 using namespace System::Net;
 using namespace System::Text;
 
-struct GPSDataStruct;
+struct GPSContents;
 
 int GPS::connect(String^ hostName, int portNumber)
 {
@@ -24,10 +24,10 @@ int GPS::connect(String^ hostName, int portNumber)
 	ReadData = gcnew array<unsigned char>(224);
 
 	Client = gcnew TcpClient(hostName, portNumber);
-	// Configure connection
+	
 	Client->NoDelay = true;
-	Client->ReceiveTimeout = 500;//ms
-	Client->SendTimeout = 500;//ms
+	Client->ReceiveTimeout = 500;
+	Client->SendTimeout = 500;
 	Client->ReceiveBufferSize = 1024;
 	Client->SendBufferSize = 1024;
 
@@ -41,52 +41,51 @@ int GPS::setupSharedMemory()
 {
 	ProcessManagementData = new SMObject(_TEXT("ProcessManagement"), sizeof(ProcessManagement));
 	SensorData = new SMObject(_TEXT("GPSSMObject"), sizeof(SM_GPS));
-	//ProcessManagementData->SMCreate();
-	//SensorData->SMCreate();
+
 	ProcessManagementData->SMAccess();
 	SensorData->SMAccess();
 	PMData = (ProcessManagement*)ProcessManagementData->pData;
 	GPSData = (SM_GPS*)SensorData->pData;
+	
 	PMData->Shutdown.Flags.GPS = 0;
 	return 1;
 }
 int GPS::getData()
 {
-	//GPSDataStruct* Novatel = new GPSDataStruct;
-	GPSDataStruct Novatel;
-	BytePtr = (unsigned char*)&Novatel;
-	startBytePtr = BytePtr;
-	int debugging = 1;
+	GPSContents GNSS;
+	BytePtr = (unsigned char*)&GNSS;
+	startByteStream = (unsigned char*)&GNSS;
 
-	//Stream->DataAvailable <- put this back in for main thing
 	if (Stream->DataAvailable) {
 		Stream->Read(ReadData, 0, ReadData->Length);
 		//
 		Start = checkData();
-		for (int i = Start; i < Start + sizeof(Novatel); i++) {
+		for (int i = Start; i < Start + sizeof(GNSS); i++) {
 			*(BytePtr++) = ReadData[i];
 
 		}
 
-		unsigned long temp = CalculateBlockCRC32(sizeof(GPSDataStruct) - 4, startBytePtr);
-		if (Novatel.CRC == temp) {
-			tempEasting = Novatel.Easting;
-			tempNorthing = Novatel.Northing;
-			tempHeight = Novatel.Height;
-			Console::WriteLine("Northing: {0,10:F3}  Easting: {1,10:F3}  Height: {2,10:F3} CRC: {3, 10:X}", Novatel.Northing,
-				Novatel.Easting, Novatel.Height, temp);
+		unsigned long temp = CalculateBlockCRC32(sizeof(GPSContents) - 4, startByteStream);
+		if (GNSS.CRC == temp) {
+			
+			gpsEasting = GNSS.Easting;
+			gpsNorthing = GNSS.Northing;
+			gpsHeight = GNSS.Height;
+			
+			Console::WriteLine("Northing: {0,10:F3}  Easting: {1,10:F3}  Height: {2,10:F3}", GNSS.Northing,
+				GNSS.Easting, GNSS.Height);
+			
 			sendDataToSharedMemory();
-
 
 		}
 	}
-	// YOUR CODE HERE
+
 	return 1;
 }
 
 int GPS::checkData()
 {
-
+	// From Week 7 Slides
 	unsigned int Header = 0;
 	int i = 0;
 	unsigned char Data;
@@ -94,7 +93,6 @@ int GPS::checkData()
 	do
 	{
 		Data = ReadData[i++];
-		Console::WriteLine("Data Output: {0,5:F3}", Data);
 		Header = ((Header << 8) | Data);
 	} while (Header != 0xaa44121c);
 
@@ -103,9 +101,9 @@ int GPS::checkData()
 
 int GPS::sendDataToSharedMemory()
 {
-	GPSData->easting = tempEasting;
-	GPSData->northing = tempNorthing;
-	GPSData->height = tempHeight;
+	GPSData->easting = gpsEasting;
+	GPSData->northing = gpsNorthing;
+	GPSData->height = gpsHeight;
 
 	return 1;
 }

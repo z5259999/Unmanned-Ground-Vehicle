@@ -35,7 +35,6 @@ int Laser::connect(String^ hostName, int portNumber)
 
 	SendData = System::Text::Encoding::ASCII->GetBytes(StudID);
 
-
 	Stream->Write(SendData, 0, SendData->Length);
 
 	System::Threading::Thread::Sleep(10);
@@ -45,7 +44,6 @@ int Laser::connect(String^ hostName, int portNumber)
 	Console::WriteLine(ResponseData);
 
 	SendData = System::Text::Encoding::ASCII->GetBytes(AskScan);
-
 
 	return 1;
 }
@@ -68,7 +66,7 @@ int Laser::getData()
 	Stream->Write(SendData, 0, SendData->Length);
 	Stream->WriteByte(0x03);
 
-	System::Threading::Thread::Sleep(120);
+	System::Threading::Thread::Sleep(100);
 
 	Stream->Read(ReadData, 0, ReadData->Length);
 
@@ -78,29 +76,28 @@ int Laser::getData()
 }
 int Laser::checkData()
 {
-	array<String^>^ LaserData = ResponseData->Split(' ');
-	Console::WriteLine(LaserData[1]);
+	DataPoints = ResponseData->Split(' ');
 
-	if (LaserData[1] == "LMDscandata") {
+	// Checking the start of the data is LMDscandata - Correct set of data
+	if (DataPoints[1] == "LMDscandata") {
 
-		Console::WriteLine(LaserData[20]);
-		double StartAngle = System::Convert::ToInt32(LaserData[23], 16);
-		double AngularStep = System::Convert::ToInt32(LaserData[24], 16) / 10000.0;
-		double NumberData = System::Convert::ToInt32(LaserData[25], 16);
+		Console::WriteLine(DataPoints[20]);
+		StartAngle = System::Convert::ToInt32(DataPoints[23], 16);
+		Resolution = System::Convert::ToInt32(DataPoints[24], 16) / 10000.0;
+		NumberRange = System::Convert::ToInt32(DataPoints[25], 16);
 
-		Console::WriteLine("The start angle: {0, 0:F0}", StartAngle);
-		Console::WriteLine("The step size: {0, 0:F3}", AngularStep);
-		Console::WriteLine("The number of data  points: {0, 0:F0}", NumberData);
+		Console::WriteLine("Start Angle: {0, 0:F}", StartAngle);
+		Console::WriteLine("Res: {0, 0:F3}", Resolution);
+		Console::WriteLine("Data Points: {0, 0:F}", NumberRange);
 
+		Range = gcnew array<double>(NumberRange);
+		RangeX = gcnew array<double>(NumberRange);
+		RangeY = gcnew array<double>(NumberRange);
 
-		XRange = gcnew array<double>(NumberData);
-		YRange = gcnew array<double>(NumberData);
-		double temp, angle;
-
-		for (int i = 0; i < NumberData; i++) {
-			temp = System::Convert::ToInt32(LaserData[26 + i], 16);
-			XRange[i] = temp * Math::Sin(i * AngularStep * Math::PI / 180);
-			YRange[i] = temp * Math::Cos(i * AngularStep * Math::PI / 180);
+		for (int i = 0; i < NumberRange; i++) {
+			Range[i] = System::Convert::ToInt32(DataPoints[26 + i], 16);
+			RangeX[i] = Range[i] * Math::Sin(i * Resolution * Math::PI / 180);
+			RangeY[i] = -Range[i] * Math::Cos(i * Resolution * Math::PI / 180);
 
 		}
 	}
@@ -110,9 +107,10 @@ int Laser::checkData()
 int Laser::sendDataToSharedMemory()
 {
 	for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
-		LaserData->x[i] = XRange[i];
-		LaserData->y[i] = YRange[i];
-		Console::WriteLine("x:{0, 0:F4} y:{1, 0:F4}", XRange[i], YRange[i]);
+		LaserData->x[i] = RangeX[i];
+		LaserData->y[i] = RangeY[i];
+		Console::WriteLine("x:{0, 0:F}", RangeX[i]);
+		Console::WriteLine("y:{0, 0:F}", RangeY[i]);
 	}
 
 	return 1;

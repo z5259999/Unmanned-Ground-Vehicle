@@ -11,7 +11,7 @@ using namespace System::IO::Ports;
 
 #pragma pack(4)
 
-struct GPSDataStruct {
+struct GPSContents {
 	unsigned int Header = 0xaa44121c;
 	unsigned char DiscardLot1[40];
 	double Northing;
@@ -41,26 +41,20 @@ public:
 
 
 protected:
-	ProcessManagement* PMData;
-	SM_GPS* GPSData;
-	double TimeStamp;
-	__int64 Frequency;
-	__int64 Counter;
-	int Shutdown;
-	unsigned char* startBytePtr;
+	
+	unsigned char* startByteStream;
 	unsigned char* BytePtr = nullptr;
 	int Start;
-	double tempNorthing;
-	double tempEasting;
-	double tempHeight;
-	SerialPort^ Port = nullptr;
+
+	double gpsNorthing;
+	double gpsEasting;
+	double gpsHeight;
+
 	String^ PortName = nullptr;
 	array<unsigned char>^ SendData;
 
-	//NetworkStream^ Stream;
-
-
-	// YOUR CODE HERE (ADDITIONAL MEMBER VARIABLES THAT YOU MAY WANT TO ADD)
+	ProcessManagement* PMData;
+	SM_GPS* GPSData;
 
 };
 
