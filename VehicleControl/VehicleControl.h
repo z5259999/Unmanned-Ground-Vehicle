@@ -29,6 +29,7 @@ public:
 
 protected:
 	
+	//Data Transmission
 	array<unsigned char>^ SendData = nullptr;
 	String^ AskScan;
 	String^ StudID;
@@ -36,6 +37,7 @@ protected:
 	String^ VehicleInput;
 	int flag = 0;
 
+	// Shared Memory
 	ProcessManagement* PMData;
 	SM_VehicleControl* VehicleControl;
 

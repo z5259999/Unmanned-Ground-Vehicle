@@ -197,6 +197,7 @@ void drawLaser() {
 
 	glPushMatrix();
 	glBegin(GL_LINES);
+	// For all Laser data points, render a line in their place
 	for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
 		
 		// Set to white lines of 2 thickness (pixels?)
@@ -230,7 +231,7 @@ void drawGPS() {
 		
 	char buffer[80];
 	if (vehicle) {
-		//White
+		//White Text
 		glColor3f(1, 1, 1);
 		sprintf(buffer, "Northing: % .4f  Easting: % .4f  Height: % .4f", GPSData->northing,
 			GPSData->easting, GPSData->height);
