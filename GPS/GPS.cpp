@@ -19,10 +19,11 @@ struct GPSContents;
 
 int GPS::connect(String^ hostName, int portNumber)
 {
-
+	// Create arrays on heap for data transmission
 	SendData = gcnew array<unsigned char>(16);
 	ReadData = gcnew array<unsigned char>(224);
 
+	// Config TCP Client
 	Client = gcnew TcpClient(hostName, portNumber);
 	
 	Client->NoDelay = true;
@@ -31,7 +32,7 @@ int GPS::connect(String^ hostName, int portNumber)
 	Client->ReceiveBufferSize = 1024;
 	Client->SendBufferSize = 1024;
 
-
+	// Check stream availability
 	Stream = Client->GetStream();
 	Console::Write(Stream->DataAvailable);
 
