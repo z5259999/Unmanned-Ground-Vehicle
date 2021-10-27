@@ -123,8 +123,8 @@ int Laser::sendDataToSharedMemory()
 	for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
 		LaserData->x[i] = RangeX[i];
 		LaserData->y[i] = RangeY[i];
-		Console::WriteLine("x:{0, 0:F}", RangeX[i]);
-		Console::WriteLine("y:{0, 0:F}", RangeY[i]);
+		Console::WriteLine("x Coord: {0, 0:F}   y Coord: {0, 0:F}", RangeX[i], RangeY[i]);
+		
 	}
 
 	return 1;
